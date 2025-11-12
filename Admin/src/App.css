@@ -1,0 +1,38 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 280px;
+  background-color: #1b263b;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  padding: 20px;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  background-color: #f9f9f9;
+}
+
+.topbar {
+  height: 64px;
+  background-color: white;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.content-area {
+  padding: 24px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}

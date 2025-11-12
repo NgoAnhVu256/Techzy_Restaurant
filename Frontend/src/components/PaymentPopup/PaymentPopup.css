@@ -1,0 +1,115 @@
+.payment-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.payment-popup-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 32px 24px 24px 24px;
+  min-width: 320px;
+  max-width: 95vw;
+  width: 400px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: popup 0.3s ease;
+}
+
+.payment-popup-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: rgb(228, 102, 5);
+}
+
+@keyframes popup {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.payment-popup-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.payment-popup-close:hover {
+  color: #ff6b6b;
+}
+
+.payment-popup-options {
+  display: flex;
+  gap: 16px;
+  margin: 18px 0 20px 0;
+  width: 100%;
+  justify-content: center;
+}
+.payment-popup-option {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 2px solid #eee;
+  background: #fafafa;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+.payment-popup-option.selected, .payment-popup-option:hover {
+  border-color: #ff6b6b;
+  background: #fff0f0;
+  color: #ff6b6b;
+}
+
+.payment-popup-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.payment-popup-qr-img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: #f9f9f9;
+}
+.payment-popup-confirm-button {
+  color: rgb(228, 102, 5);
+  padding: 10px 18px;
+  border-radius: 2px;
+  border: none;
+  margin-top: 10px;
+  border: 2px solid black;
+  cursor: pointer;
+}
+
+@media (max-width: 500px) {
+  .payment-popup-container {
+    width: 98vw;
+    min-width: unset;
+    padding: 16px 4vw 18px 4vw;
+  }
+  .payment-popup-qr-img {
+    width: 150px;
+    height: 150px;
+  }
+}

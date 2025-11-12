@@ -1,0 +1,384 @@
+/**
+ * Controller xử lý API cho Users (TaiKhoan)
+ * CRUD + Login/Register
+ */
+
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { TaiKhoan, VaiTro } = require("../models");
+const config = require("../config/env");
+const logger = require("../utils/logger");
+
+/**
+ * Tạo JWT token
+ */
+const generateToken = (taiKhoan) => {
+  return jwt.sign(
+    {
+      id: taiKhoan.MaTaiKhoan,
+      tenDangNhap: taiKhoan.TenDangNhap,
+      email: taiKhoan.Email,
+      role: taiKhoan.vaiTro?.TenVaiTro || "NhanVien",
+    },
+    config.jwt.secret,
+    { expiresIn: config.jwt.expiresIn }
+  );
+};
+
+/**
+ * Lấy tất cả users
+ */
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await TaiKhoan.findAll({
+      include: [
+        {
+          model: VaiTro,
+          as: "vaiTro",
+          attributes: ["MaVaiTro", "TenVaiTro", "MoTa"],
+        },
+      ],
+      attributes: {
+        exclude: ["MatKhauHash"],
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Lấy danh sách users thành công",
+      data: users,
+    });
+  } catch (error) {
+    logger.error("Lỗi lấy danh sách users", { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * Lấy user theo ID
+ */
+const getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await TaiKhoan.findByPk(id, {
+      include: [
+        {
+          model: VaiTro,
+          as: "vaiTro",
+          attributes: ["MaVaiTro", "TenVaiTro", "MoTa"],
+        },
+      ],
+      attributes: {
+        exclude: ["MatKhauHash"],
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Lấy thông tin user thành công",
+      data: user,
+    });
+  } catch (error) {
+    logger.error("Lỗi lấy user", { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * Đăng ký user mới
+ */
+const register = async (req, res, next) => {
+  try {
+    const { HoTen, TenDangNhap, Email, SDT, MatKhau, MaVaiTro } = req.body;
+
+    // Validation
+    if (!HoTen || !TenDangNhap || !Email || !SDT || !MatKhau) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng điền đầy đủ thông tin",
+      });
+    }
+
+    if (MatKhau.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Mật khẩu phải có ít nhất 6 ký tự",
+      });
+    }
+
+    // Kiểm tra tên đăng nhập đã tồn tại
+    const existingUser = await TaiKhoan.findOne({
+      where: { TenDangNhap },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Tên đăng nhập đã tồn tại",
+      });
+    }
+
+    // Kiểm tra email đã tồn tại
+    const existingEmail = await TaiKhoan.findOne({
+      where: { Email },
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({
+        success: false,
+        message: "Email đã được sử dụng",
+      });
+    }
+
+    // Hash password
+    const MatKhauHash = await bcrypt.hash(MatKhau, 10);
+
+    // Tạo user mới
+    const newUser = await TaiKhoan.create({
+      HoTen,
+      TenDangNhap,
+      Email,
+      SDT,
+      MatKhauHash,
+      MaVaiTro: MaVaiTro || 2, // Mặc định là Nhân viên
+      TrangThai: "Active",
+      NgayThamGia: new Date(),
+    });
+
+    // Lấy user với thông tin đầy đủ
+    const user = await TaiKhoan.findByPk(newUser.MaTaiKhoan, {
+      include: [
+        {
+          model: VaiTro,
+          as: "vaiTro",
+        },
+      ],
+      attributes: {
+        exclude: ["MatKhauHash"],
+      },
+    });
+
+    logger.info("User đăng ký thành công", {
+      userId: user.MaTaiKhoan,
+      tenDangNhap: user.TenDangNhap,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Đăng ký thành công",
+      data: user,
+    });
+  } catch (error) {
+    logger.error("Lỗi đăng ký user", { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * Đăng nhập
+ */
+const login = async (req, res, next) => {
+  try {
+    const { TenDangNhap, MatKhau } = req.body;
+
+    // Validation
+    if (!TenDangNhap || !MatKhau) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập tên đăng nhập và mật khẩu",
+      });
+    }
+
+    // Tìm user
+    const user = await TaiKhoan.findOne({
+      where: { TenDangNhap },
+      include: [
+        {
+          model: VaiTro,
+          as: "vaiTro",
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Tên đăng nhập hoặc mật khẩu không đúng",
+      });
+    }
+
+    // Kiểm tra mật khẩu
+    const isPasswordValid = await bcrypt.compare(MatKhau, user.MatKhauHash);
+
+    if (!isPasswordValid) {
+      // Tăng số lần đăng nhập sai
+      user.LoginAttempts += 1;
+      if (user.LoginAttempts >= 5) {
+        user.TrangThai = "Locked";
+        user.LockoutEnd = new Date(Date.now() + 30 * 60 * 1000); // Khóa 30 phút
+      }
+      await user.save();
+
+      return res.status(401).json({
+        success: false,
+        message: "Tên đăng nhập hoặc mật khẩu không đúng",
+      });
+    }
+
+    // Kiểm tra trạng thái tài khoản
+    if (user.TrangThai === "Locked") {
+      if (user.LockoutEnd && new Date(user.LockoutEnd) > new Date()) {
+        const minutesLeft = Math.ceil(
+          (new Date(user.LockoutEnd) - new Date()) / 60000
+        );
+        return res.status(403).json({
+          success: false,
+          message: `Tài khoản đã bị khóa. Vui lòng thử lại sau ${minutesLeft} phút`,
+        });
+      }
+      // Hết thời gian khóa, mở lại
+      user.TrangThai = "Active";
+      user.LoginAttempts = 0;
+      user.LockoutEnd = null;
+    }
+
+    if (user.TrangThai !== "Active") {
+      return res.status(403).json({
+        success: false,
+        message: "Tài khoản đã bị vô hiệu hóa",
+      });
+    }
+
+    // Cập nhật thông tin đăng nhập
+    user.LastLogin = new Date();
+    user.LoginAttempts = 0;
+    await user.save();
+
+    // Tạo token
+    const token = generateToken(user);
+
+    // Trả về thông tin user (không bao gồm password)
+    const userData = {
+      MaTaiKhoan: user.MaTaiKhoan,
+      HoTen: user.HoTen,
+      TenDangNhap: user.TenDangNhap,
+      Email: user.Email,
+      SDT: user.SDT,
+      TrangThai: user.TrangThai,
+      NgayThamGia: user.NgayThamGia,
+      TenVaiTro: user.vaiTro?.TenVaiTro || "NhanVien",
+    };
+
+    logger.info("User đăng nhập thành công", {
+      userId: user.MaTaiKhoan,
+      tenDangNhap: user.TenDangNhap,
+    });
+
+    return res.json({
+      success: true,
+      message: "Đăng nhập thành công",
+      data: {
+        token,
+        user: userData,
+      },
+    });
+  } catch (error) {
+    logger.error("Lỗi đăng nhập", { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * Cập nhật user
+ */
+const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { HoTen, Email, SDT, MaVaiTro, TrangThai } = req.body;
+
+    const user = await TaiKhoan.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user",
+      });
+    }
+
+    // Cập nhật thông tin
+    if (HoTen) user.HoTen = HoTen;
+    if (Email) user.Email = Email;
+    if (SDT) user.SDT = SDT;
+    if (MaVaiTro) user.MaVaiTro = MaVaiTro;
+    if (TrangThai) user.TrangThai = TrangThai;
+
+    await user.save();
+
+    // Lấy user với thông tin đầy đủ
+    const updatedUser = await TaiKhoan.findByPk(id, {
+      include: [
+        {
+          model: VaiTro,
+          as: "vaiTro",
+        },
+      ],
+      attributes: {
+        exclude: ["MatKhauHash"],
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Cập nhật user thành công",
+      data: updatedUser,
+    });
+  } catch (error) {
+    logger.error("Lỗi cập nhật user", { error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * Xóa user
+ */
+const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await TaiKhoan.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user",
+      });
+    }
+
+    await user.destroy();
+
+    return res.json({
+      success: true,
+      message: "Xóa user thành công",
+    });
+  } catch (error) {
+    logger.error("Lỗi xóa user", { error: error.message });
+    next(error);
+  }
+};
+
+module.exports = {
+  getAllUsers,
+  getUserById,
+  register,
+  login,
+  updateUser,
+  deleteUser,
+};
