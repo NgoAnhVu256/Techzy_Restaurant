@@ -13,6 +13,13 @@ const DonHang = require("./DonHang");
 const ChiTietDonHang = require("./ChiTietDonHang");
 const DatBan = require("./DatBan");
 const DatBanMonAn = require("./DatBanMonAn");
+const NhaCungCap = require("./NhaCungCap");
+const NguyenVatLieu = require("./NguyenVatLieu");
+const PhongBan = require("./PhongBan");
+const NhanVien = require("./NhanVien");
+const CaLamViec = require("./CaLamViec");
+const LichLamViec = require("./LichLamViec");
+const KhuyenMai = require("./KhuyenMai");
 
 // Định nghĩa relationships
 
@@ -55,6 +62,30 @@ DatBanMonAn.belongsTo(DatBan, { foreignKey: "MaDatBan", as: "datBan" });
 MonAn.hasMany(DatBanMonAn, { foreignKey: "MaMon", as: "datBanMonAn" });
 DatBanMonAn.belongsTo(MonAn, { foreignKey: "MaMon", as: "monAn" });
 
+// NhaCungCap - NguyenVatLieu (1-N)
+NhaCungCap.hasMany(NguyenVatLieu, { foreignKey: "MaNhaCungCap", as: "nguyenVatLieus" });
+NguyenVatLieu.belongsTo(NhaCungCap, { foreignKey: "MaNhaCungCap", as: "nhaCungCap" });
+
+// PhongBan - NhanVien (1-N)
+PhongBan.hasMany(NhanVien, { foreignKey: "MaPhongBan", as: "nhanViens" });
+NhanVien.belongsTo(PhongBan, { foreignKey: "MaPhongBan", as: "phongBan" });
+
+// NhanVien - TaiKhoan (1-1)
+NhanVien.hasOne(TaiKhoan, { foreignKey: "MaNhanVien", as: "taiKhoan" });
+TaiKhoan.belongsTo(NhanVien, { foreignKey: "MaNhanVien", as: "nhanVien" });
+
+// NhanVien - LichLamViec (1-N)
+NhanVien.hasMany(LichLamViec, { foreignKey: "MaNhanVien", as: "lichLamViecs" });
+LichLamViec.belongsTo(NhanVien, { foreignKey: "MaNhanVien", as: "nhanVien" });
+
+// CaLamViec - LichLamViec (1-N)
+CaLamViec.hasMany(LichLamViec, { foreignKey: "MaCa", as: "lichLamViecs" });
+LichLamViec.belongsTo(CaLamViec, { foreignKey: "MaCa", as: "caLamViec" });
+
+// KhuyenMai - MonAn (1-N)
+KhuyenMai.hasMany(MonAn, { foreignKey: "MaKM", as: "monAns" });
+MonAn.belongsTo(KhuyenMai, { foreignKey: "MaKM", as: "khuyenMai" });
+
 module.exports = {
   sequelize,
   VaiTro,
@@ -67,4 +98,11 @@ module.exports = {
   ChiTietDonHang,
   DatBan,
   DatBanMonAn,
+  NhaCungCap,
+  NguyenVatLieu,
+  PhongBan,
+  NhanVien,
+  CaLamViec,
+  LichLamViec,
+  KhuyenMai,
 };

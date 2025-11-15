@@ -4,6 +4,8 @@
 
 const { LoaiMon, MonAn } = require('../models');
 const logger = require('../utils/logger');
+const path = require('path');
+const fs = require('fs').promises;
 
 // Lấy tất cả loại món
 const getAllCategories = async (req, res, next) => {
@@ -37,9 +39,29 @@ const getCategoryById = async (req, res, next) => {
 // Tạo loại món
 const createCategory = async (req, res, next) => {
   try {
-    const { TenLoai, HinhAnh } = req.body;
-    if (!TenLoai || !HinhAnh) {
-      return res.status(400).json({ success: false, message: 'Vui lòng nhập TenLoai và HinhAnh' });
+    // Log để debug
+    logger.info('Create category request', {
+      body: req.body,
+      file: req.file ? { filename: req.file.filename, mimetype: req.file.mimetype } : null,
+      headers: req.headers
+    });
+
+    const { TenLoai } = req.body;
+    if (!TenLoai) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Vui lòng nhập TenLoai',
+        received: { body: req.body, hasFile: !!req.file }
+      });
+    }
+
+    // Kiểm tra file upload
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Vui lòng chọn hình ảnh',
+        received: { body: req.body, hasFile: false }
+      });
     }
 
     const exists = await LoaiMon.findOne({ where: { TenLoai } });
@@ -47,10 +69,11 @@ const createCategory = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Tên loại đã tồn tại' });
     }
 
+    const HinhAnh = req.file.filename;
     const created = await LoaiMon.create({ TenLoai, HinhAnh });
     return res.status(201).json({ success: true, message: 'Tạo loại món thành công', data: created });
   } catch (error) {
-    logger.error('Lỗi tạo loại món', { error: error.message });
+    logger.error('Lỗi tạo loại món', { error: error.message, stack: error.stack });
     next(error);
   }
 };
@@ -59,14 +82,29 @@ const createCategory = async (req, res, next) => {
 const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { TenLoai, HinhAnh } = req.body;
+    const { TenLoai } = req.body;
+    
     const category = await LoaiMon.findByPk(id);
     if (!category) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy loại món' });
     }
 
     if (TenLoai) category.TenLoai = TenLoai;
-    if (HinhAnh) category.HinhAnh = HinhAnh;
+    
+    // Xử lý upload hình ảnh mới
+    if (req.file) {
+      // Xóa hình ảnh cũ
+      if (category.HinhAnh) {
+        const oldImagePath = path.join(__dirname, '../../wwwroot/images', category.HinhAnh);
+        try {
+          await fs.unlink(oldImagePath);
+        } catch (err) {
+          logger.warn('Không thể xóa hình ảnh cũ', { error: err.message });
+        }
+      }
+      category.HinhAnh = req.file.filename;
+    }
+    
     await category.save();
 
     return res.json({ success: true, message: 'Cập nhật loại món thành công', data: category });

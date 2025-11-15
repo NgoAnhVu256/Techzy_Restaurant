@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './WorkSchedule.css';
 
 const WorkSchedule = () => {
@@ -25,7 +25,7 @@ const WorkSchedule = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/employees');
+      const response = await api.get('/employees');
       setEmployees(response.data);
     } catch (err) {
       setError('Failed to fetch employees');
@@ -36,7 +36,7 @@ const WorkSchedule = () => {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/schedules`, {
+      const response = await api.get(`/schedules`, {
         params: { date: selectedDate }
       });
       setSchedules(response.data);
@@ -61,7 +61,7 @@ const WorkSchedule = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/schedules', formData);
+      await api.post('/schedules', formData);
       setSuccess('Schedule added successfully');
       setFormData({
         employeeId: '',
@@ -83,7 +83,7 @@ const WorkSchedule = () => {
   const handleStatusChange = async (scheduleId, newStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5000/api/schedules/${scheduleId}`, {
+      await api.patch(`/schedules/${scheduleId}`, {
         status: newStatus
       });
       setSuccess('Schedule status updated successfully');
@@ -100,7 +100,7 @@ const WorkSchedule = () => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
         setLoading(true);
-        await axios.delete(`http://localhost:5000/api/schedules/${scheduleId}`);
+        await api.delete(`/schedules/${scheduleId}`);
         setSuccess('Schedule deleted successfully');
         fetchSchedules();
       } catch (err) {

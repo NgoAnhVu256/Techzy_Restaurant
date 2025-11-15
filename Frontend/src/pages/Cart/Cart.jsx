@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Cart.css";
-import axios from "axios";
+import api from "@/utils/axios";
 
 const Cart = () => {
   const [reservations, setReservations] = useState([]);
@@ -8,7 +8,7 @@ const Cart = () => {
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        const response = await axios.get("http://localhost:5078/api/DatBan");
+        const response = await api.get("/DatBan");
         setReservations(response.data);
       } catch (error) {
         console.error("Lỗi khi lấy thông tin đặt bàn:", error);

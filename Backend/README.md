@@ -47,12 +47,14 @@ cp .env.example .env
 Mở file `.env` và cập nhật thông tin kết nối database:
 
 **Nếu sử dụng AWS RDS:**
+
 ```env
 DATABASE_URL=postgresql://username:password@your-rds-endpoint:5432/database_name
 DB_SSL=true
 ```
 
 **Nếu sử dụng PostgreSQL local:**
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -203,9 +205,10 @@ backend/
 
 ## 🔐 Authentication
 
-API sử dụng JWT (JSON Web Token) để xác thực. 
+API sử dụng JWT (JSON Web Token) để xác thực.
 
 **Cách sử dụng:**
+
 1. Đăng nhập qua `/api/users/login` để nhận token
 2. Gửi token trong header của các request cần xác thực:
    ```
@@ -213,6 +216,7 @@ API sử dụng JWT (JSON Web Token) để xác thực.
    ```
 
 **Vai trò:**
+
 - **Quản lý**: Toàn quyền truy cập
 - **Nhân viên**: Quyền hạn chế
 - **Khách hàng**: Chỉ có thể tạo đơn hàng và đặt bàn
@@ -262,6 +266,7 @@ npx sequelize-cli db:migrate:undo
 ### Port đã được sử dụng
 
 Thay đổi port trong file `.env`:
+
 ```env
 PORT=5001
 ```
@@ -281,4 +286,3 @@ ISC
 ## 👥 Contributors
 
 - Techzy Restaurant Team
-

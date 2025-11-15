@@ -1,149 +1,121 @@
-.order-container {
-  padding: 20px;
-  width: 100%;
-  position: relative;
-  min-height: 100vh;
-}
-
-.tables-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin: 20px 0;
-}
-
-.table-card {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out;
-}
-
-.table-card:hover {
-  transform: translateY(-5px);
-}
-
-.table-card.booked {
-  background-color: #ffebee;
-  border: 1px solid #ffcdd2;
-}
-
-.table-card h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-}
-
-.table-card p {
-  margin: 5px 0;
-  color: #666;
-}
-
-.table-actions {
+.order-page {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.edit-button,
-.delete-button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  flex: 1;
-}
-
-.edit-button {
-  background-color: #4caf50;
-  color: white;
-}
-
-.delete-button {
-  background-color: #f44336;
-  color: white;
-}
-
-.delete-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.add-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px 20px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.add-button:hover {
-  background-color: #1976d2;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+.page-header {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 500px;
-  max-width: 90%;
+.page-eyebrow {
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #7c89b3;
+  margin-bottom: 6px;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.page-header h2 {
+  font-size: 28px;
+  color: #0f1841;
+  margin: 0;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
+.order-filters {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.order-filters .ant-tabs-card > .ant-tabs-content {
+  margin-top: 0;
+}
+
+.order-filters .ant-tabs-card > .ant-tabs-content > .ant-tabs-tabpane {
+  background: transparent;
+  padding: 0;
+}
+
+.order-filters .ant-tabs-tab {
+  font-weight: 500;
+  color: #7c85a6;
+}
+
+.order-filters .ant-tabs-tab-active {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.order-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
 .modal-actions {
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.modal-actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.ant-table {
+  border-radius: 18px !important;
+  overflow: hidden;
 }
 
-.modal-actions button[type="submit"] {
-  background-color: #4caf50;
-  color: white;
+.ant-table-thead > tr > th {
+  background-color: #f6f7fb !important;
+  font-weight: 600;
+  color: #7c85a6;
 }
 
-.modal-actions button[type="button"] {
-  background-color: #f44336;
-  color: white;
+.ant-table-tbody > tr > td {
+  color: #1a1f3c;
+  font-size: 14px;
+}
+
+.order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detail-section {
+  padding: 16px;
+  background: #f6f7fb;
+  border-radius: 12px;
+}
+
+.detail-section h4 {
+  margin: 0 0 12px 0;
+  color: #0f1841;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-info p {
+  margin: 0;
+  color: #1a1f3c;
+}
+
+.detail-info strong {
+  color: #0f1841;
+  min-width: 120px;
+  display: inline-block;
 }

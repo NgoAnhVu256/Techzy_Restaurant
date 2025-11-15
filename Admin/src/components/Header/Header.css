@@ -1,0 +1,131 @@
+.admin-header {
+  height: 72px;
+  background-color: #ffffff;
+  border-bottom: 1px solid rgba(10, 19, 52, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.header-search {
+  flex: 1;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f5f6fb;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.header-search:focus-within {
+  border-color: rgba(93, 135, 255, 0.6);
+}
+
+.header-search svg {
+  color: #8a94b2;
+  font-size: 20px;
+}
+
+.header-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #182155;
+  outline: none;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.notification-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(24, 33, 85, 0.08);
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-size: 20px;
+  color: #182155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-btn:hover {
+  border-color: rgba(93, 135, 255, 0.6);
+  color: #5d87ff;
+}
+
+.notification-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #ff5a5f;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(24, 33, 85, 0.08);
+}
+
+.header-profile img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(93, 135, 255, 0.4);
+}
+
+.profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #182155;
+  margin-bottom: 2px;
+}
+
+.profile-role {
+  font-size: 12px;
+  color: #7b83a5;
+}
+
+@media (max-width: 1024px) {
+  .header-search {
+    max-width: 360px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    height: auto;
+    padding: 16px;
+  }
+
+  .header-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+

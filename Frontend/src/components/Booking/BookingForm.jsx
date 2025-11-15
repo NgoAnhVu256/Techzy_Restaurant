@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/axios'; // Import api instance
+import api from '@/utils/axios'; // Import api instance
 
 const BookingForm = ({ onSubmit, selectedFoods = [], loading: bookingLoading }) => {
   const [formData, setFormData] = useState({

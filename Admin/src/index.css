@@ -16,7 +16,8 @@
 
 body {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #f4f6fb;
+  color: #0f1841;
 }
 
 a {
@@ -24,14 +25,22 @@ a {
   color: inherit;
 }
 
-hr {
-  border: none;
-  height: 1px;
-  background-color: #a9a9a9;
+button {
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.app-content {
-  display: flex;
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 28, 69, 0.2);
+  border-radius: 999px;
 }
 
 .flex-col {

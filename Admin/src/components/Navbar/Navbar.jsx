@@ -30,7 +30,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       // Gọi API đăng xuất
-      await axios.post("http://localhost:5078/api/Auth/logout");
+      await axios.post("/Auth/logout");
 
       // Xóa token từ localStorage
       localStorage.removeItem("token");

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/axios";
 import "./Reservation.css";
 
 const ReservationConfirm = ({ show, onClose, reservationDetails }) => {
@@ -65,7 +65,7 @@ const Reservation = () => {
     const fetchTables = async () => {
       setLoadingTables(true);
       try {
-        const response = await axios.get("http://localhost:5078/api/Ban");
+        const response = await api.get("/Ban");
         if (response.data.length === 0) {
           setError("Hiện tại không có bàn nào trong hệ thống");
           return;
@@ -117,8 +117,8 @@ const Reservation = () => {
           return;
         }
 
-        const response = await axios.get(
-          `http://localhost:5078/api/Ban/available?date=${form.day}&startTime=${form.hourStart}&endTime=${form.hourEnd}&people=${form.people}`
+        const response = await api.get(
+          `/Ban/available?date=${form.day}&startTime=${form.hourStart}&endTime=${form.hourEnd}&people=${form.people}`
         );
         setAvailableTables(response.data);
         setError("");
@@ -148,7 +148,7 @@ const Reservation = () => {
 
     try {
       // Tạo khách hàng trước
-      const khachHangResponse = await axios.post("http://localhost:5078/api/KhachHang", {
+      const khachHangResponse = await api.post("/KhachHang", {
         hoTen: form.name,
         soDienThoai: form.phone,
         email: form.email,
@@ -160,7 +160,7 @@ const Reservation = () => {
       }
 
       // Đặt bàn với mã khách hàng vừa tạo
-      const response = await axios.post("http://localhost:5078/api/DatBan", {
+      const response = await api.post("/DatBan", {
         maBan: parseInt(form.tableId),
         maKH: khachHangResponse.data.maKhachHang,
         thoiGianBatDau: new Date(`${form.day}T${form.hourStart}:00`).toISOString(),

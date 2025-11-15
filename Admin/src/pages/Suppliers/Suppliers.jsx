@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./Suppliers.css";
-import axios from "axios";
+import api from "../../utils/axios";
 import { toast } from "react-toastify";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Typography,
+} from "antd";
+import { FiEdit2, FiTrash2, FiPlus } from "react-icons/fi";
+
+const { Text } = Typography;
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -9,41 +21,13 @@ const Suppliers = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [addForm] = Form.useForm();
+  const [editForm] = Form.useForm();
 
-  const [newSupplier, setNewSupplier] = useState({
-    tenNCC: "",
-    diaChi: "",
-    sdt: "",
-    email: "",
-    trangThai: "Active"
-  });
-
-  // Lọc nhà cung cấp theo từ khóa tìm kiếm
-  const filteredSuppliers = suppliers.filter(
-    (supplier) =>
-      supplier.tenNCC.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.sdt.includes(searchTerm)
-  );
-
-  // Phân trang
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredSuppliers.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-
-  // Fetch danh sách nhà cung cấp
   const fetchSuppliers = async () => {
     try {
-      const response = await axios.get("http://localhost:5078/api/NhaCungCap");
-      if (response.data) {
-        setSuppliers(response.data);
-      }
+      const response = await api.get("/suppliers");
+      setSuppliers(response.data.data || []);
     } catch (error) {
       toast.error("Lỗi khi tải danh sách nhà cung cấp");
     }
@@ -53,373 +37,288 @@ const Suppliers = () => {
     fetchSuppliers();
   }, []);
 
-  // Thêm nhà cung cấp mới
-  const handleAddSupplier = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (showEditModal && selectedSupplier) {
+      editForm.setFieldsValue({
+        tenNhaCungCap: selectedSupplier.TenNhaCungCap || selectedSupplier.tenNhaCungCap,
+        soDienThoai: selectedSupplier.SoDienThoai || selectedSupplier.soDienThoai,
+        email: selectedSupplier.Email || selectedSupplier.email || "",
+        diaChi: selectedSupplier.DiaChi || selectedSupplier.diaChi || "",
+      });
+    }
+  }, [showEditModal, selectedSupplier, editForm]);
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    addForm.resetFields();
+  };
+
+  const handleAddSupplier = async (values) => {
     try {
-      const response = await axios.post(
-        "http://localhost:5078/api/NhaCungCap",
-        {
-          tenNCC: newSupplier.tenNCC,
-          diaChi: newSupplier.diaChi,
-          sdt: newSupplier.sdt,
-          email: newSupplier.email,
-          trangThai: newSupplier.trangThai
-        }
-      );
-      if (response.status === 201) {
-        toast.success("Thêm nhà cung cấp thành công");
-        fetchSuppliers();
-        setShowAddModal(false);
-        setNewSupplier({
-          tenNCC: "",
-          diaChi: "",
-          sdt: "",
-          email: "",
-          trangThai: "Active"
-        });
-      }
+      await api.post("/suppliers", {
+        TenNhaCungCap: values.tenNhaCungCap,
+        SoDienThoai: values.soDienThoai || null,
+        Email: values.email || null,
+        DiaChi: values.diaChi || null,
+      });
+      toast.success("Thêm nhà cung cấp thành công");
+      fetchSuppliers();
+      closeAddModal();
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi: ${error.response.data}`);
-      } else {
-        toast.error("Lỗi khi thêm nhà cung cấp");
-      }
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi thêm nhà cung cấp: " + errorMessage);
     }
   };
 
-  // Cập nhật nhà cung cấp
-  const handleEditSupplier = async (e) => {
-    e.preventDefault();
+  const handleEditSupplier = async (values) => {
+    if (!selectedSupplier) return;
     try {
-      await axios.put(
-        `http://localhost:5078/api/NhaCungCap/${selectedSupplier.maNCC}`,
+      await api.put(
+        `/suppliers/${selectedSupplier.MaNhaCungCap || selectedSupplier.maNhaCungCap}`,
         {
-          maNCC: selectedSupplier.maNCC,
-          tenNCC: selectedSupplier.tenNCC,
-          diaChi: selectedSupplier.diaChi,
-          sdt: selectedSupplier.sdt,
-          email: selectedSupplier.email,
-          trangThai: selectedSupplier.trangThai
+          TenNhaCungCap: values.tenNhaCungCap,
+          SoDienThoai: values.soDienThoai || null,
+          Email: values.email || null,
+          DiaChi: values.diaChi || null,
         }
       );
       toast.success("Cập nhật nhà cung cấp thành công");
       fetchSuppliers();
       setShowEditModal(false);
+      setSelectedSupplier(null);
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi: ${error.response.data}`);
-      } else {
-        toast.error("Lỗi khi cập nhật nhà cung cấp");
-      }
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi cập nhật nhà cung cấp: " + errorMessage);
     }
   };
 
-  // Xóa nhà cung cấp
   const handleDeleteSupplier = async () => {
+    if (!selectedSupplier) return;
     try {
-      await axios.delete(
-        `http://localhost:5078/api/NhaCungCap/${selectedSupplier.maNCC}`
+      await api.delete(
+        `/suppliers/${selectedSupplier.MaNhaCungCap || selectedSupplier.maNhaCungCap}`
       );
       toast.success("Xóa nhà cung cấp thành công");
       fetchSuppliers();
       setShowDeleteModal(false);
+      setSelectedSupplier(null);
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi: ${error.response.data}`);
-      } else {
-        toast.error("Lỗi khi xóa nhà cung cấp");
-      }
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi xóa nhà cung cấp: " + errorMessage);
     }
   };
 
-  // Xử lý thay đổi input
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (showEditModal) {
-      setSelectedSupplier((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      setNewSupplier((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
-  // Hàm chuyển đổi trạng thái sang tiếng Việt
-  const getStatusText = (status) => {
-    switch (status) {
-      case "Active":
-        return "Hoạt động";
-      case "Inactive":
-        return "Dừng hoạt động";
-      default:
-        return status;
-    }
-  };
+  const columns = useMemo(
+    () => [
+      {
+        title: "Tên nhà cung cấp",
+        dataIndex: "TenNhaCungCap",
+        key: "TenNhaCungCap",
+        render: (text, record) => (
+          <span className="supplier-name">{text || record.tenNhaCungCap}</span>
+        ),
+        sorter: (a, b) => (a.TenNhaCungCap || a.tenNhaCungCap || "").localeCompare(b.TenNhaCungCap || b.tenNhaCungCap || ""),
+      },
+      {
+        title: "Số điện thoại",
+        dataIndex: "SoDienThoai",
+        key: "SoDienThoai",
+        render: (text, record) => text || record.soDienThoai || "-",
+      },
+      {
+        title: "Email",
+        dataIndex: "Email",
+        key: "Email",
+        render: (text, record) => text || record.email || "-",
+      },
+      {
+        title: "Địa chỉ",
+        dataIndex: "DiaChi",
+        key: "DiaChi",
+        render: (text, record) => {
+          const address = text || record.diaChi;
+          return address ? (
+            <Text ellipsis={{ tooltip: address }} style={{ maxWidth: 200 }}>
+              {address}
+            </Text>
+          ) : (
+            <Text type="secondary">-</Text>
+          );
+        },
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        render: (_, record) => (
+          <Space>
+            <Button
+              icon={<FiEdit2 />}
+              onClick={() => {
+                setSelectedSupplier(record);
+                setShowEditModal(true);
+              }}
+            >
+              Sửa
+            </Button>
+            <Button
+              icon={<FiTrash2 />}
+              danger
+              onClick={() => {
+                setSelectedSupplier(record);
+                setShowDeleteModal(true);
+              }}
+            >
+              Xóa
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="suppliers-container">
-      <div className="suppliers-header">
-        <div className="header-left">
-          <h2>Quản lý nhà cung cấp</h2>
-          <span className="total-count">{suppliers.length} nhà cung cấp</span>
+    <div className="suppliers-page">
+      <div className="page-header">
+        <div>
+          <p className="page-eyebrow">Quản lý Kho / Nhà cung cấp</p>
+          <h2>Quản lý Nhà cung cấp</h2>
         </div>
-        <div className="header-right">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Tìm kiếm nhà cung cấp..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button className="add-button" onClick={() => setShowAddModal(true)}>
-            <i className="fas fa-plus"></i> Thêm nhà cung cấp
-          </button>
-        </div>
-      </div>
-
-      <div className="suppliers-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Tên nhà cung cấp</th>
-              <th>Địa chỉ</th>
-              <th>Số điện thoại</th>
-              <th>Email</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.map((supplier) => (
-              <tr key={supplier.maNCC}>
-                <td>{supplier.tenNCC}</td>
-                <td>{supplier.diaChi}</td>
-                <td>{supplier.sdt}</td>
-                <td>{supplier.email}</td>
-                <td>
-                  <span className={`status-badge ${supplier.trangThai.toLowerCase()}`}>
-                    {getStatusText(supplier.trangThai)}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    className="edit-button"
-                    onClick={() => {
-                      setSelectedSupplier(supplier);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    <i className="fas fa-edit"></i>
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={() => {
-                      setSelectedSupplier(supplier);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="pagination">
-        <button
-          onClick={() => setCurrentPage(currentPage - 1)}
-          disabled={currentPage === 1}
+        <Button
+          type="primary"
+          icon={<FiPlus />}
+          size="large"
+          onClick={() => {
+            addForm.resetFields();
+            setShowAddModal(true);
+          }}
         >
-          <i className="fas fa-chevron-left"></i> Trước
-        </button>
-        <span>
-          {currentPage} / {totalPages}
-        </span>
-        <button
-          onClick={() => setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Sau <i className="fas fa-chevron-right"></i>
-        </button>
+          Thêm Nhà cung cấp
+        </Button>
       </div>
 
-      {/* Modal thêm nhà cung cấp */}
-      {showAddModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Thêm nhà cung cấp mới</h3>
-            <form onSubmit={handleAddSupplier}>
-              <div className="form-group">
-                <label>Tên nhà cung cấp:</label>
-                <input
-                  type="text"
-                  name="tenNCC"
-                  value={newSupplier.tenNCC}
-                  onChange={handleInputChange}
-                  maxLength={100}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Địa chỉ:</label>
-                <input
-                  type="text"
-                  name="diaChi"
-                  value={newSupplier.diaChi}
-                  onChange={handleInputChange}
-                  maxLength={200}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Số điện thoại:</label>
-                <input
-                  type="tel"
-                  name="sdt"
-                  value={newSupplier.sdt}
-                  onChange={handleInputChange}
-                  maxLength={15}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Email:</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={newSupplier.email}
-                  onChange={handleInputChange}
-                  maxLength={100}
-                  required
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="save-button">
-                  Lưu
-                </button>
-                <button
-                  type="button"
-                  className="cancel-button"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="suppliers-card">
+        <Table
+          columns={columns}
+          dataSource={suppliers}
+          rowKey={(record) => record.MaNhaCungCap || record.maNhaCungCap}
+          pagination={{ pageSize: 10 }}
+        />
+      </div>
 
-      {/* Modal chỉnh sửa nhà cung cấp */}
-      {showEditModal && selectedSupplier && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Chỉnh sửa nhà cung cấp</h3>
-            <form onSubmit={handleEditSupplier}>
-              <div className="form-group">
-                <label>Tên nhà cung cấp:</label>
-                <input
-                  type="text"
-                  name="tenNCC"
-                  value={selectedSupplier.tenNCC}
-                  onChange={handleInputChange}
-                  maxLength={100}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Địa chỉ:</label>
-                <input
-                  type="text"
-                  name="diaChi"
-                  value={selectedSupplier.diaChi}
-                  onChange={handleInputChange}
-                  maxLength={200}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Số điện thoại:</label>
-                <input
-                  type="tel"
-                  name="sdt"
-                  value={selectedSupplier.sdt}
-                  onChange={handleInputChange}
-                  maxLength={15}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Email:</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={selectedSupplier.email}
-                  onChange={handleInputChange}
-                  maxLength={100}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Trạng thái:</label>
-                <select
-                  name="trangThai"
-                  value={selectedSupplier.trangThai}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="Active">Hoạt động</option>
-                  <option value="Inactive">Dừng hoạt động</option>
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="save-button">
-                  Lưu
-                </button>
-                <button
-                  type="button"
-                  className="cancel-button"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Add Modal */}
+      <Modal
+        title="Thêm nhà cung cấp mới"
+        open={showAddModal}
+        onCancel={closeAddModal}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          layout="vertical"
+          form={addForm}
+          onFinish={handleAddSupplier}
+          initialValues={{ tenNhaCungCap: "", soDienThoai: "", email: "", diaChi: "" }}
+        >
+          <Form.Item
+            label="Tên nhà cung cấp"
+            name="tenNhaCungCap"
+            rules={[{ required: true, message: "Vui lòng nhập tên nhà cung cấp" }]}
+          >
+            <Input placeholder="Nhập tên nhà cung cấp" />
+          </Form.Item>
 
-      {/* Modal xóa nhà cung cấp */}
-      {showDeleteModal && selectedSupplier && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Xác nhận xóa</h3>
-            <p>
-              Bạn có chắc chắn muốn xóa nhà cung cấp "
-              {selectedSupplier.tenNCC}"?
-            </p>
-            <div className="modal-actions">
-              <button className="delete-button" onClick={handleDeleteSupplier}>
-                Xóa
-              </button>
-              <button
-                className="cancel-button"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Hủy
-              </button>
-            </div>
+          <Form.Item
+            label="Số điện thoại"
+            name="soDienThoai"
+          >
+            <Input placeholder="Nhập số điện thoại (tùy chọn)" />
+          </Form.Item>
+
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ type: "email", message: "Email không hợp lệ" }]}
+          >
+            <Input placeholder="Nhập email (tùy chọn)" />
+          </Form.Item>
+
+          <Form.Item label="Địa chỉ" name="diaChi">
+            <Input placeholder="Nhập địa chỉ (tùy chọn)" />
+          </Form.Item>
+
+          <div className="modal-actions">
+            <Button onClick={closeAddModal}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Thêm
+            </Button>
           </div>
-        </div>
-      )}
+        </Form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        title="Chỉnh sửa nhà cung cấp"
+        open={showEditModal}
+        onCancel={() => {
+          setShowEditModal(false);
+          setSelectedSupplier(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={editForm} onFinish={handleEditSupplier}>
+          <Form.Item
+            label="Tên nhà cung cấp"
+            name="tenNhaCungCap"
+            rules={[{ required: true, message: "Vui lòng nhập tên nhà cung cấp" }]}
+          >
+            <Input placeholder="Nhập tên nhà cung cấp" />
+          </Form.Item>
+
+          <Form.Item
+            label="Số điện thoại"
+            name="soDienThoai"
+          >
+            <Input placeholder="Nhập số điện thoại (tùy chọn)" />
+          </Form.Item>
+
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ type: "email", message: "Email không hợp lệ" }]}
+          >
+            <Input placeholder="Nhập email (tùy chọn)" />
+          </Form.Item>
+
+          <Form.Item label="Địa chỉ" name="diaChi">
+            <Input placeholder="Nhập địa chỉ (tùy chọn)" />
+          </Form.Item>
+
+          <div className="modal-actions">
+            <Button onClick={() => setShowEditModal(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Lưu
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Delete Modal */}
+      <Modal
+        title="Xác nhận xóa"
+        open={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onOk={handleDeleteSupplier}
+        okButtonProps={{ danger: true }}
+        okText="Xóa"
+        cancelText="Hủy"
+      >
+        <p>Bạn có chắc chắn muốn xóa nhà cung cấp này không?</p>
+        <Text strong>
+          {selectedSupplier?.TenNhaCungCap || selectedSupplier?.tenNhaCungCap}
+        </Text>
+      </Modal>
     </div>
   );
 };

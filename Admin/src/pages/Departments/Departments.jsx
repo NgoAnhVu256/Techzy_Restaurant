@@ -1,75 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./Departments.css";
-import axios from "axios";
+import api from "../../utils/axios";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Typography,
+} from "antd";
+import { FiEdit2, FiTrash2, FiPlus } from "react-icons/fi";
+
+const { Text } = Typography;
 
 const Departments = () => {
-  const navigate = useNavigate();
   const [departments, setDepartments] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [employees, setEmployees] = useState([]);
-  const [newDepartment, setNewDepartment] = useState({
-    tenBoPhan: "",
-    moTa: "",
-  });
+  const [addForm] = Form.useForm();
+  const [editForm] = Form.useForm();
 
-  // Khởi tạo selectedDepartment khi mở modal chỉnh sửa
-  const handleEdit = (department) => {
-    setSelectedDepartment({
-      ...department,
-      moTa: department.moTa || "",
-    });
-    setShowEditModal(true);
-  };
-
-  // Reset form khi đóng modal
-  const handleCloseModal = () => {
-    setShowAddModal(false);
-    setShowEditModal(false);
-    setShowDeleteModal(false);
-    setSelectedDepartment(null);
-    setNewDepartment({
-      tenBoPhan: "",
-      moTa: "",
-    });
-  };
-
-  // Cập nhật state khi nhập liệu
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (showEditModal) {
-      setSelectedDepartment((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      setNewDepartment((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
-  // Fetch departments
   const fetchDepartments = async () => {
     try {
-      const response = await axios.get("http://localhost:5078/api/BoPhan");
-      if (response.data) {
-        setDepartments(response.data);
-      }
+      const response = await api.get("/departments");
+      setDepartments(response.data.data || []);
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi server: ${error.response.data}`);
-      } else if (error.request) {
-        toast.error("Không thể kết nối đến server");
-      } else {
-        toast.error(`Lỗi: ${error.message}`);
-      }
+      toast.error("Lỗi khi tải danh sách phòng ban");
     }
   };
 
@@ -77,293 +37,214 @@ const Departments = () => {
     fetchDepartments();
   }, []);
 
-  // Add new department
-  const handleAddDepartment = async (e) => {
-    e.preventDefault();
-    try {
-      if (!newDepartment.tenBoPhan.trim()) {
-        toast.error("Vui lòng nhập tên bộ phận");
-        return;
-      }
+  useEffect(() => {
+    if (showEditModal && selectedDepartment) {
+      editForm.setFieldsValue({
+        tenPhongBan: selectedDepartment.TenPhongBan || selectedDepartment.tenPhongBan,
+      });
+    }
+  }, [showEditModal, selectedDepartment, editForm]);
 
-      const response = await axios.post(
-        "http://localhost:5078/api/BoPhan",
-        newDepartment
-      );
-      if (response.status === 201) {
-        toast.success("Thêm bộ phận thành công");
-        await fetchDepartments();
-        setShowAddModal(false);
-        setNewDepartment({
-          tenBoPhan: "",
-          moTa: "",
-        });
-      }
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    addForm.resetFields();
+  };
+
+  const handleAddDepartment = async (values) => {
+    try {
+      await api.post("/departments", {
+        TenPhongBan: values.tenPhongBan,
+      });
+      toast.success("Thêm phòng ban thành công");
+      fetchDepartments();
+      closeAddModal();
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi: ${error.response.data}`);
-      } else if (error.request) {
-        toast.error("Không thể kết nối đến server");
-      } else {
-        toast.error(`Lỗi: ${error.message}`);
-      }
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi thêm phòng ban: " + errorMessage);
     }
   };
 
-  // Edit department
-  const handleEditDepartment = async (e) => {
-    e.preventDefault();
+  const handleEditDepartment = async (values) => {
+    if (!selectedDepartment) return;
     try {
-      await axios.put(
-        `http://localhost:5078/api/BoPhan/${selectedDepartment.maBoPhan}`,
+      await api.put(
+        `/departments/${selectedDepartment.MaPhongBan || selectedDepartment.maPhongBan}`,
         {
-          maBoPhan: selectedDepartment.maBoPhan,
-          tenBoPhan: selectedDepartment.tenBoPhan,
-          moTa: selectedDepartment.moTa,
+          TenPhongBan: values.tenPhongBan,
         }
       );
-      toast.success("Cập nhật bộ phận thành công");
+      toast.success("Cập nhật phòng ban thành công");
       fetchDepartments();
       setShowEditModal(false);
+      setSelectedDepartment(null);
     } catch (error) {
-      if (error.response) {
-        toast.error(`Lỗi: ${error.response.data}`);
-      } else if (error.request) {
-        toast.error("Không thể kết nối đến server");
-      } else {
-        toast.error(`Lỗi: ${error.message}`);
-      }
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi cập nhật phòng ban: " + errorMessage);
     }
   };
 
-  // Delete department
   const handleDeleteDepartment = async () => {
+    if (!selectedDepartment) return;
     try {
-      await axios.delete(
-        `http://localhost:5078/api/BoPhan/${selectedDepartment.maBoPhan}`
+      await api.delete(
+        `/departments/${selectedDepartment.MaPhongBan || selectedDepartment.maPhongBan}`
       );
-      toast.success("Xóa bộ phận thành công");
+      toast.success("Xóa phòng ban thành công");
       fetchDepartments();
       setShowDeleteModal(false);
+      setSelectedDepartment(null);
     } catch (error) {
-      toast.error("Lỗi khi xóa bộ phận");
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi xóa phòng ban: " + errorMessage);
     }
   };
 
-  // Fetch employees for a department
-  const handleViewEmployees = async (department) => {
-    setSelectedDepartment(department);
-    try {
-      const response = await axios.get(
-        `http://localhost:5078/api/NhanVien/by-department/${department.maBoPhan}`
-      );
-      setEmployees(response.data || []);
-      setShowEmployeeModal(true);
-    } catch (error) {
-      console.error(error);
-      setEmployees([]);
-      toast.error("Lỗi khi tải danh sách nhân viên");
-    }
-  };
+  const columns = useMemo(
+    () => [
+      {
+        title: "Tên phòng ban",
+        dataIndex: "TenPhongBan",
+        key: "TenPhongBan",
+        render: (text, record) => (
+          <span className="department-name">{text || record.tenPhongBan}</span>
+        ),
+        sorter: (a, b) => (a.TenPhongBan || a.tenPhongBan || "").localeCompare(b.TenPhongBan || b.tenPhongBan || ""),
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        render: (_, record) => (
+          <Space>
+            <Button
+              icon={<FiEdit2 />}
+              onClick={() => {
+                setSelectedDepartment(record);
+                setShowEditModal(true);
+              }}
+            >
+              Sửa
+            </Button>
+            <Button
+              icon={<FiTrash2 />}
+              danger
+              onClick={() => {
+                setSelectedDepartment(record);
+                setShowDeleteModal(true);
+              }}
+            >
+              Xóa
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="departments-container">
-      <div className="departments-header">
-        <div className="header-left">
-          <button
-            className="back-button"
-            onClick={() => navigate("/human-resources")}
+    <div className="departments-page">
+      <div className="page-header">
+        <div>
+          <p className="page-eyebrow">Quản lý Nhân sự / Phòng ban</p>
+          <h2>Quản lý Phòng ban</h2>
+        </div>
+        <Button
+          type="primary"
+          icon={<FiPlus />}
+          size="large"
+          onClick={() => {
+            addForm.resetFields();
+            setShowAddModal(true);
+          }}
+        >
+          Thêm Phòng ban
+        </Button>
+      </div>
+
+      <div className="departments-card">
+        <Table
+          columns={columns}
+          dataSource={departments}
+          rowKey={(record) => record.MaPhongBan || record.maPhongBan}
+          pagination={{ pageSize: 10 }}
+        />
+      </div>
+
+      {/* Add Modal */}
+      <Modal
+        title="Thêm phòng ban mới"
+        open={showAddModal}
+        onCancel={closeAddModal}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          layout="vertical"
+          form={addForm}
+          onFinish={handleAddDepartment}
+          initialValues={{ tenPhongBan: "" }}
+        >
+          <Form.Item
+            label="Tên phòng ban"
+            name="tenPhongBan"
+            rules={[{ required: true, message: "Vui lòng nhập tên phòng ban" }]}
           >
-            <i className="fas fa-arrow-left"></i>
-            Quay về
-          </button>
-          <h2>Quản lý bộ phận</h2>
-          <span className="total-count">{departments.length} bộ phận</span>
-        </div>
-        <button className="add-button" onClick={() => setShowAddModal(true)}>
-          <i className="fas fa-plus"></i> Thêm bộ phận
-        </button>
-      </div>
+            <Input placeholder="Nhập tên phòng ban" />
+          </Form.Item>
 
-      <div className="departments-grid">
-        {departments.map((dept) => (
-          <div key={dept.maBoPhan} className="department-card">
-            <div className="department-header">
-              <h3>{dept.tenBoPhan}</h3>
-              <div className="department-actions">
-                <button
-                  className="view-button"
-                  onClick={() => handleViewEmployees(dept)}
-                >
-                  <i className="fas fa-users"></i>
-                </button>
-                <button
-                  className="edit-button"
-                  onClick={() => handleEdit(dept)}
-                >
-                  <i className="fas fa-edit"></i>
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={() => {
-                    setSelectedDepartment(dept);
-                    setShowDeleteModal(true);
-                  }}
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-            <p className="department-desc">{dept.moTa || "Chưa có mô tả"}</p>
-            <p className="department-staff-count">
-              Số nhân viên: {dept.soLuongNhanVien}
-            </p>
+          <div className="modal-actions">
+            <Button onClick={closeAddModal}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Thêm
+            </Button>
           </div>
-        ))}
-      </div>
+        </Form>
+      </Modal>
 
-      {/* Add Department Modal */}
-      {showAddModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Thêm bộ phận mới</h3>
-            <form onSubmit={handleAddDepartment}>
-              <div className="form-group">
-                <label>Tên bộ phận:</label>
-                <input
-                  type="text"
-                  value={newDepartment.tenBoPhan}
-                  onChange={(e) =>
-                    setNewDepartment({
-                      ...newDepartment,
-                      tenBoPhan: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Mô tả:</label>
-                <textarea
-                  value={newDepartment.moTa}
-                  onChange={(e) =>
-                    setNewDepartment({ ...newDepartment, moTa: e.target.value })
-                  }
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowAddModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit">Thêm</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit Modal */}
+      <Modal
+        title="Chỉnh sửa phòng ban"
+        open={showEditModal}
+        onCancel={() => {
+          setShowEditModal(false);
+          setSelectedDepartment(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={editForm} onFinish={handleEditDepartment}>
+          <Form.Item
+            label="Tên phòng ban"
+            name="tenPhongBan"
+            rules={[{ required: true, message: "Vui lòng nhập tên phòng ban" }]}
+          >
+            <Input placeholder="Nhập tên phòng ban" />
+          </Form.Item>
 
-      {/* Edit Department Modal */}
-      {showEditModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Sửa bộ phận</h3>
-            <form onSubmit={handleEditDepartment}>
-              <div className="form-group">
-                <label>Tên bộ phận:</label>
-                <input
-                  type="text"
-                  value={selectedDepartment.tenBoPhan}
-                  onChange={(e) =>
-                    setSelectedDepartment({
-                      ...selectedDepartment,
-                      tenBoPhan: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Mô tả:</label>
-                <textarea
-                  value={selectedDepartment.moTa}
-                  onChange={(e) =>
-                    setSelectedDepartment({
-                      ...selectedDepartment,
-                      moTa: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowEditModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit">Lưu</button>
-              </div>
-            </form>
+          <div className="modal-actions">
+            <Button onClick={() => setShowEditModal(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Lưu
+            </Button>
           </div>
-        </div>
-      )}
+        </Form>
+      </Modal>
 
-      {/* Delete Department Modal */}
-      {showDeleteModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Xóa bộ phận</h3>
-            <p>
-              Bạn có chắc chắn muốn xóa bộ phận "{selectedDepartment.tenBoPhan}
-              "?
-            </p>
-            <div className="modal-actions">
-              <button onClick={() => setShowDeleteModal(false)}>Hủy</button>
-              <button onClick={handleDeleteDepartment} className="delete">
-                Xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Employees Modal */}
-      {showEmployeeModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Danh sách nhân viên - {selectedDepartment.tenBoPhan}</h3>
-            <div className="employees-table-container">
-              <table className="employees-table">
-                <thead>
-                  <tr>
-                    <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>Địa chỉ</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" style={{ textAlign: "center" }}>
-                        Chưa có nhân viên trong bộ phận này
-                      </td>
-                    </tr>
-                  ) : (
-                    employees.map((emp) => (
-                      <tr key={emp.maNhanVien}>
-                        <td>{emp.hoTen}</td>
-                        <td>{emp.email}</td>
-                        <td>{emp.diaChi}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="modal-actions">
-              <button onClick={() => setShowEmployeeModal(false)}>Đóng</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Modal */}
+      <Modal
+        title="Xác nhận xóa"
+        open={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onOk={handleDeleteDepartment}
+        okButtonProps={{ danger: true }}
+        okText="Xóa"
+        cancelText="Hủy"
+      >
+        <p>Bạn có chắc chắn muốn xóa phòng ban này không?</p>
+        <Text strong>
+          {selectedDepartment?.TenPhongBan || selectedDepartment?.tenPhongBan}
+        </Text>
+      </Modal>
     </div>
   );
 };

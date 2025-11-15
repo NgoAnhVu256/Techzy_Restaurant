@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './StorageManagement.css';
 
 const StorageManagement = () => {
@@ -25,7 +25,7 @@ const StorageManagement = () => {
   const fetchInventory = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/inventory');
+      const response = await api.get('/inventory');
       setInventory(response.data);
       setError('');
     } catch (err) {
@@ -48,7 +48,7 @@ const StorageManagement = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/inventory', formData);
+      await api.post('/inventory', formData);
       setSuccess('Item added successfully');
       setFormData({
         name: '',
@@ -71,7 +71,7 @@ const StorageManagement = () => {
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5000/api/inventory/${id}`, {
+      await api.patch(`/inventory/${id}`, {
         status: currentStatus === 'active' ? 'inactive' : 'active'
       });
       setSuccess('Status updated successfully');

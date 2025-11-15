@@ -1,38 +1,42 @@
-.app-layout {
+.admin-app {
+  min-height: 100vh;
+  background-color: #f4f6fb;
+  font-family: "Inter", sans-serif;
+}
+
+.admin-layout {
   display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.admin-main {
+  flex: 1;
+  margin-left: 280px;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-.sidebar {
-  width: 280px;
-  background-color: #1b263b;
-  position: fixed;
-  height: 100vh;
-  left: 0;
-  top: 0;
-  padding: 20px;
-  color: white;
-  transition: all 0.3s ease;
-}
-
-.main-content {
+.admin-content {
   flex: 1;
-  margin-left: 280px;
-  background-color: #f9f9f9;
-}
-
-.topbar {
-  height: 64px;
-  background-color: white;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.content-area {
-  padding: 24px;
-  height: calc(100vh - 64px);
+  background-color: #f4f6fb;
+  padding: 32px;
   overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .admin-main {
+    margin-left: 240px;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-main {
+    margin-left: 0;
+  }
 }

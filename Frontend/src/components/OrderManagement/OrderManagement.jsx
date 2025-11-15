@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './OrderManagement.css';
 
 const OrderManagement = () => {
@@ -18,7 +18,7 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/orders');
+      const response = await api.get('/orders');
       setOrders(response.data);
       setError('');
     } catch (err) {
@@ -32,7 +32,7 @@ const OrderManagement = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5000/api/orders/${orderId}`, {
+      await api.patch(`/orders/${orderId}`, {
         status: newStatus
       });
       setSuccess('Order status updated successfully');

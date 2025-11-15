@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './CustomerManagement.css';
 
 const CustomerManagement = () => {
@@ -25,7 +25,7 @@ const CustomerManagement = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5078/api/KhachHang');
+      const response = await api.get('/KhachHang');
       setCustomers(response.data);
       setError('');
     } catch (err) {
@@ -57,10 +57,10 @@ const CustomerManagement = () => {
       };
 
       if (selectedCustomer) {
-        await axios.put(`http://localhost:5078/api/KhachHang/${selectedCustomer.maKhachHang}`, dataToSubmit);
+        await api.put(`/KhachHang/${selectedCustomer.maKhachHang}`, dataToSubmit);
         setSuccess('Customer updated successfully');
       } else {
-        await axios.post('http://localhost:5078/api/KhachHang', dataToSubmit);
+        await api.post('/KhachHang', dataToSubmit);
         setSuccess('Customer added successfully');
       }
       setFormData({
@@ -96,7 +96,7 @@ const CustomerManagement = () => {
   const handleToggleStatus = async (customerId, currentStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5078/api/KhachHang/${customerId}`, {
+      await api.patch(`/KhachHang/${customerId}`, {
         trangThai: currentStatus === 'active' ? 'inactive' : 'active'
       });
       setSuccess('Customer status updated successfully');
@@ -113,7 +113,7 @@ const CustomerManagement = () => {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
         setLoading(true);
-        await axios.delete(`http://localhost:5078/api/KhachHang/${customerId}`);
+        await api.delete(`/KhachHang/${customerId}`);
         setSuccess('Customer deleted successfully');
         fetchCustomers();
       } catch (err) {

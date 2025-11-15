@@ -1,12 +1,11 @@
-import React, { useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import React from "react";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
 
-// Components
-import Navbar from "./components/Navbar/Navbar";
-import Sidebar from "./components/Sidebar/Sidebar";
-import Login from "./components/Login/Login";
+import AdminLayout from "./components/Layout/AdminLayout";
+import Login from "./pages/Login/Login";
 
 // Pages
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -24,35 +23,226 @@ import Suppliers from "./pages/Suppliers/Suppliers";
 import Promotions from "./pages/Promotions/Promotions";
 import HumanResources from "./pages/HumanResources/HumanResources";
 import WorkSchedule from "./pages/WorkSchedule/WorkSchedule";
+import Statistics from "./pages/Statistics/Statistics";
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
 
 const App = () => {
-  const [showLogin, setShowLogin] = useState(true);
+  const token = localStorage.getItem("token");
+  const isAuthenticated = !!token;
+
   return (
-    <div>
+    <div className="admin-app">
       <ToastContainer />
-      {showLogin ? <Login setShowLogin={setShowLogin} /> : <></>}
-      <Navbar />
-      <hr />
-      <div className="app-content">
-        <Sidebar />
-        <Routes>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/foods" element={<Foods />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/order" element={<Order />} />
-          <Route path="/departments" element={<Departments />} />
-          <Route path="/shifts" element={<Shifts />} />
-          <Route path="/storage" element={<Storage />} />
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/tables" element={<Tables />} />
-          <Route path="/reservations" element={<Reservations />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/suppliers" element={<Suppliers />} />
-          <Route path="/promotions" element={<Promotions />} />
-          <Route path="/workschedule" element={<WorkSchedule />} />
-          <Route path="/human-resources" element={<HumanResources />} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* Public route: Login */}
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+          }
+        />
+
+        {/* Protected routes: Dashboard và các trang khác */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Navigate to="/dashboard" replace />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Dashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/foods"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Foods />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/categories"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Categories />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/order"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Order />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Departments />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/shifts"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Shifts />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/storage"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Storage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Employees />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tables"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Tables />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reservations"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Reservations />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Customers />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/suppliers"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Suppliers />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/promotions"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Promotions />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/statistics"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Statistics />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/workschedule"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <WorkSchedule />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/human-resources"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <HumanResources />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch all - redirect to dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </div>
   );
 };

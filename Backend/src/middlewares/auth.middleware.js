@@ -104,7 +104,7 @@ const isAdmin = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== "Quản lý") {
+  if (req.user.role !== "Admin") {
     return res.status(403).json({
       success: false,
       message: "Không có quyền truy cập",
@@ -125,7 +125,7 @@ const isEmployeeOrAdmin = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== "Quản lý" && req.user.role !== "Nhân viên") {
+  if (req.user.role !== "Admin") {
     return res.status(403).json({
       success: false,
       message: "Không có quyền truy cập",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './RevenueStatistics.css';
 
 const RevenueStatistics = () => {
@@ -36,7 +36,7 @@ const RevenueStatistics = () => {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/statistics/revenue', {
+      const response = await api.get('/statistics/revenue', {
         params: {
           startDate: dateRange.startDate,
           endDate: dateRange.endDate

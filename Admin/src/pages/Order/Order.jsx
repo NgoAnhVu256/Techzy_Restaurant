@@ -1,293 +1,519 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./Order.css";
-import axios from "axios";
+import api from "../../utils/axios";
 import { toast } from "react-toastify";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Select,
+  Space,
+  Typography,
+  Tag,
+  Tabs,
+  Badge,
+} from "antd";
+import { FiEye, FiEdit, FiPlus } from "react-icons/fi";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+
+const { Text } = Typography;
 
 const Order = () => {
-  const [tables, setTables] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [editedTable, setEditedTable] = useState({
-    tenBan: "",
-    sucChua: "",
-  });
-  const [newTable, setNewTable] = useState({
-    tenBan: "",
-    sucChua: "",
-    trangThai: false,
-  });
+  const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [statusForm] = Form.useForm();
 
-  // Fetch tables
-  const fetchTables = async () => {
-    try {
-      const response = await axios.get("http://localhost:5078/api/Ban");
-      setTables(response.data);
-    } catch (error) {
-      toast.error("Lỗi khi tải danh sách bàn");
-    }
+  const statusConfig = {
+    ChoXacNhan: { label: "Chờ xác nhận", color: "orange" },
+    DangChuanBi: { label: "Đang chuẩn bị", color: "blue" },
+    HoanThanh: { label: "Hoàn thành", color: "green" },
+    DaThanhToan: { label: "Đã thanh toán", color: "cyan" },
+    DaHuy: { label: "Đã hủy", color: "red" },
   };
 
-  // Fetch bookings
-  const fetchBookings = async () => {
+  const fetchOrders = async () => {
     try {
-      const response = await axios.get("http://localhost:5078/api/DatBan");
-      setBookings(response.data);
+      const response = await api.get("/orders");
+      setOrders(response.data.data || []);
     } catch (error) {
-      toast.error("Lỗi khi tải danh sách đặt bàn");
+      toast.error("Lỗi khi tải danh sách đơn hàng");
     }
   };
 
   useEffect(() => {
-    fetchTables();
-    fetchBookings();
+    fetchOrders();
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchOrders, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Check if table name exists
-  const isTableNameExists = (name, excludeId = null) => {
-    return tables.some(
-      (table) =>
-        table.tenBan.toLowerCase() === name.toLowerCase() &&
-        table.maBan !== excludeId
-    );
-  };
-
-  // Add new table
-  const handleAddTable = async (e) => {
-    e.preventDefault();
-    if (isTableNameExists(newTable.tenBan)) {
-      toast.error("Tên bàn đã tồn tại!");
-      return;
-    }
-    try {
-      await axios.post("http://localhost:5078/api/Ban", newTable);
-      toast.success("Thêm bàn thành công");
-      fetchTables();
-      setShowAddModal(false);
-      setNewTable({
-        tenBan: "",
-        sucChua: "",
-        trangThai: false,
-      });
-    } catch (error) {
-      toast.error("Lỗi khi thêm bàn");
-    }
-  };
-
-  // Edit table
-  const handleEditTable = async (e) => {
-    e.preventDefault();
-    if (isTableNameExists(editedTable.tenBan, selectedTable.maBan)) {
-        toast.error("Tên bàn đã tồn tại!");
-        return;
-    }
-    try {
-        await axios.put(`http://localhost:5078/api/Ban/${selectedTable.maBan}`, {
-            tenBan: editedTable.tenBan,
-            sucChua: parseInt(editedTable.sucChua)
-        });
-        toast.success("Cập nhật bàn thành công");
-        fetchTables();
-        setShowEditModal(false);
-    } catch (error) {
-        if (error.response) {
-            if (error.response.status === 404) {
-                toast.error("Không tìm thấy bàn này!");
-            } else if (error.response.status === 400) {
-                toast.error(error.response.data);
-            } else {
-                toast.error("Lỗi khi cập nhật bàn");
-            }
-        } else {
-            toast.error("Lỗi kết nối đến server");
-        }
-    }
-};
-
-  // Delete table
-  const handleDeleteTable = async () => {
-    if (isTableBooked(selectedTable.maBan)) {
-      toast.error("Không thể xóa bàn đang được đặt!");
-      return;
-    }
-    try {
-      await axios.delete(
-        `http://localhost:5078/api/Ban/${selectedTable.maBan}`
+  useEffect(() => {
+    if (activeTab === "all") {
+      setFilteredOrders(orders);
+    } else {
+      setFilteredOrders(
+        orders.filter((order) => order.TrangThai === activeTab)
       );
-      toast.success("Xóa bàn thành công");
-      fetchTables();
-      setShowDeleteModal(false);
+    }
+  }, [activeTab, orders]);
+
+  useEffect(() => {
+    if (showStatusModal && selectedOrder) {
+      statusForm.setFieldsValue({
+        trangThai: selectedOrder.TrangThai || selectedOrder.trangThai,
+      });
+    }
+  }, [showStatusModal, selectedOrder, statusForm]);
+
+  const handleViewDetail = async (order) => {
+    try {
+      const response = await api.get(
+        `/orders/${order.MaDonHang || order.maDonHang}`
+      );
+      setSelectedOrder(response.data.data);
+      setShowDetailModal(true);
     } catch (error) {
-      if (error.response) {
-        if (error.response.status === 404) {
-          toast.error("Không tìm thấy bàn này!");
-        } else if (error.response.status === 400) {
-          toast.error(error.response.data);
-        } else {
-          toast.error("Lỗi khi xóa bàn");
-        }
-      } else {
-        toast.error("Lỗi kết nối đến server");
-      }
+      toast.error("Lỗi khi tải chi tiết đơn hàng");
     }
   };
 
-  // Check if table is currently booked
-  const isTableBooked = (tableId) => {
-    const currentTime = new Date();
-    return bookings.some(
-      (booking) =>
-        booking.maBan === tableId &&
-        new Date(booking.thoiGianBatDau) <= currentTime &&
-        new Date(booking.thoiGianKetThuc) >= currentTime
-    );
+  const handleUpdateStatus = async (values) => {
+    if (!selectedOrder) return;
+    try {
+      await api.put(
+        `/orders/${
+          selectedOrder.MaDonHang || selectedOrder.maDonHang
+        }/trangthai`,
+        {
+          TrangThai: values.trangThai,
+        }
+      );
+      toast.success("Cập nhật trạng thái thành công");
+      fetchOrders();
+      setShowStatusModal(false);
+      setSelectedOrder(null);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi cập nhật trạng thái: " + errorMessage);
+    }
   };
+
+  const getStatusCount = (status) => {
+    if (status === "all") return orders.length;
+    return orders.filter((order) => order.TrangThai === status).length;
+  };
+
+  const columns = useMemo(
+    () => [
+      {
+        title: "Mã Đơn",
+        dataIndex: "MaDonHang",
+        key: "MaDonHang",
+        render: (text, record) => (
+          <Text strong>#{text || record.maDonHang}</Text>
+        ),
+        sorter: (a, b) =>
+          (a.MaDonHang || a.maDonHang || 0) - (b.MaDonHang || b.maDonHang || 0),
+      },
+      {
+        title: "Khách Hàng",
+        key: "khachHang",
+        render: (_, record) => {
+          const customer = record.khachHang || record.KhachHang;
+          return customer ? (
+            <div>
+              <div style={{ fontWeight: 600 }}>
+                {customer.HoTen || customer.hoTen}
+              </div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {customer.SoDienThoai || customer.soDienThoai}
+              </Text>
+            </div>
+          ) : (
+            "-"
+          );
+        },
+      },
+      {
+        title: "Ngày Đặt",
+        dataIndex: "NgayDat",
+        key: "NgayDat",
+        render: (text, record) => {
+          const date = text || record.ngayDat;
+          return date
+            ? format(new Date(date), "dd/MM/yyyy HH:mm", { locale: vi })
+            : "-";
+        },
+        sorter: (a, b) => {
+          const dateA = new Date(a.NgayDat || a.ngayDat || 0);
+          const dateB = new Date(b.NgayDat || b.ngayDat || 0);
+          return dateA - dateB;
+        },
+      },
+      {
+        title: "Tổng Tiền",
+        dataIndex: "TongTien",
+        key: "TongTien",
+        render: (text, record) => {
+          const amount = text || record.tongTien || 0;
+          return (
+            <Text strong style={{ color: "#1890ff" }}>
+              {amount.toLocaleString("vi-VN")} VNĐ
+            </Text>
+          );
+        },
+        sorter: (a, b) =>
+          (a.TongTien || a.tongTien || 0) - (b.TongTien || b.tongTien || 0),
+      },
+      {
+        title: "Trạng Thái",
+        dataIndex: "TrangThai",
+        key: "TrangThai",
+        render: (text, record) => {
+          const status = text || record.trangThai;
+          const config = statusConfig[status] || {
+            label: status,
+            color: "default",
+          };
+          return <Tag color={config.color}>{config.label}</Tag>;
+        },
+      },
+      {
+        title: "Hành động",
+        key: "actions",
+        render: (_, record) => (
+          <Space>
+            <Button icon={<FiEye />} onClick={() => handleViewDetail(record)}>
+              Chi tiết
+            </Button>
+            <Button
+              icon={<FiEdit />}
+              onClick={() => {
+                setSelectedOrder(record);
+                setShowStatusModal(true);
+              }}
+            >
+              Cập nhật
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="order-container">
-      <h2>Quản lý bàn</h2>
-
-      <div className="tables-grid">
-        {tables.map((table) => (
-          <div
-            key={table.maBan}
-            className={`table-card ${
-              isTableBooked(table.maBan) ? "booked" : ""
-            }`}
-          >
-            <h3>{table.tenBan}</h3>
-            <p>Sức chứa: {table.sucChua} người</p>
-            <p>Trạng thái: {isTableBooked(table.maBan) ? "Đã đặt" : "Trống"}</p>
-            <div className="table-actions">
-              <button
-                className="edit-button"
-                onClick={() => {
-                  setSelectedTable(table);
-                  setEditedTable({
-                    tenBan: table.tenBan,
-                    sucChua: table.sucChua,
-                  });
-                  setShowEditModal(true);
-                }}
-              >
-                Sửa
-              </button>
-              <button
-                className="delete-button"
-                onClick={() => {
-                  setSelectedTable(table);
-                  setShowDeleteModal(true);
-                }}
-                disabled={isTableBooked(table.maBan)}
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        ))}
+    <div className="order-page">
+      <div className="page-header">
+        <div>
+          <p className="page-eyebrow">Quản lý Bán hàng / Đơn hàng</p>
+          <h2>Quản lý Đơn hàng</h2>
+        </div>
+        <Button
+          type="primary"
+          icon={<FiPlus />}
+          size="large"
+          onClick={() => {
+            toast.info("Chức năng tạo đơn hàng mới sẽ được phát triển sau");
+          }}
+        >
+          Tạo Đơn Hàng Mới
+        </Button>
       </div>
 
-      <button className="add-button" onClick={() => setShowAddModal(true)}>
-        + Thêm bàn
-      </button>
+      <div className="order-filters">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          type="card"
+          size="large"
+          items={[
+            {
+              key: "all",
+              label: (
+                <span>
+                  Tất cả
+                  <Badge
+                    count={getStatusCount("all")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+            {
+              key: "ChoXacNhan",
+              label: (
+                <span>
+                  Chờ xác nhận
+                  <Badge
+                    count={getStatusCount("ChoXacNhan")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+            {
+              key: "DangChuanBi",
+              label: (
+                <span>
+                  Đang chuẩn bị
+                  <Badge
+                    count={getStatusCount("DangChuanBi")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+            {
+              key: "HoanThanh",
+              label: (
+                <span>
+                  Hoàn thành
+                  <Badge
+                    count={getStatusCount("HoanThanh")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+            {
+              key: "DaThanhToan",
+              label: (
+                <span>
+                  Đã thanh toán
+                  <Badge
+                    count={getStatusCount("DaThanhToan")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+            {
+              key: "DaHuy",
+              label: (
+                <span>
+                  Đã hủy
+                  <Badge
+                    count={getStatusCount("DaHuy")}
+                    style={{ marginLeft: 8 }}
+                    showZero
+                  />
+                </span>
+              ),
+            },
+          ]}
+        />
+      </div>
 
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Thêm bàn mới</h3>
-            <form onSubmit={handleAddTable}>
-              <div className="form-group">
-                <label>Tên bàn:</label>
-                <input
-                  type="text"
-                  value={newTable.tenBan}
-                  onChange={(e) =>
-                    setNewTable({ ...newTable, tenBan: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Sức chứa:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={newTable.sucChua}
-                  onChange={(e) =>
-                    setNewTable({ ...newTable, sucChua: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="submit">Thêm</button>
-                <button type="button" onClick={() => setShowAddModal(false)}>
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="order-card">
+        <Table
+          columns={columns}
+          dataSource={filteredOrders}
+          rowKey={(record) => record.MaDonHang || record.maDonHang}
+          pagination={{ pageSize: 10 }}
+        />
+      </div>
 
-      {/* Edit Modal */}
-      {showEditModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Sửa bàn</h3>
-            <form onSubmit={handleEditTable}>
-              <div className="form-group">
-                <label>Tên bàn:</label>
-                <input
-                  type="text"
-                  value={editedTable.tenBan}
-                  onChange={(e) =>
-                    setEditedTable({ ...editedTable, tenBan: e.target.value })
-                  }
-                  required
-                />
+      {/* Detail Modal */}
+      <Modal
+        title={`Chi tiết đơn hàng #${
+          selectedOrder?.MaDonHang || selectedOrder?.maDonHang
+        }`}
+        open={showDetailModal}
+        onCancel={() => {
+          setShowDetailModal(false);
+          setSelectedOrder(null);
+        }}
+        footer={null}
+        width={800}
+      >
+        {selectedOrder && (
+          <div className="order-detail">
+            <div className="detail-section">
+              <h4>Thông tin khách hàng</h4>
+              <div className="detail-info">
+                <p>
+                  <strong>Họ tên:</strong>{" "}
+                  {selectedOrder.khachHang?.HoTen ||
+                    selectedOrder.KhachHang?.HoTen ||
+                    selectedOrder.khachHang?.hoTen ||
+                    "-"}
+                </p>
+                <p>
+                  <strong>Số điện thoại:</strong>{" "}
+                  {selectedOrder.khachHang?.SoDienThoai ||
+                    selectedOrder.KhachHang?.SoDienThoai ||
+                    selectedOrder.khachHang?.soDienThoai ||
+                    "-"}
+                </p>
+                <p>
+                  <strong>Email:</strong>{" "}
+                  {selectedOrder.khachHang?.Email ||
+                    selectedOrder.KhachHang?.Email ||
+                    selectedOrder.khachHang?.email ||
+                    "-"}
+                </p>
               </div>
-              <div className="form-group">
-                <label>Sức chứa:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={editedTable.sucChua}
-                  onChange={(e) =>
-                    setEditedTable({ ...editedTable, sucChua: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="submit">Lưu</button>
-                <button type="button" onClick={() => setShowEditModal(false)}>
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Xác nhận xóa</h3>
-            <p>Bạn có chắc chắn muốn xóa {selectedTable.tenBan} không?</p>
-            <div className="modal-actions">
-              <button onClick={handleDeleteTable}>Xóa</button>
-              <button onClick={() => setShowDeleteModal(false)}>Hủy</button>
+            <div className="detail-section">
+              <h4>Thông tin đơn hàng</h4>
+              <div className="detail-info">
+                <p>
+                  <strong>Ngày đặt:</strong>{" "}
+                  {selectedOrder.NgayDat || selectedOrder.ngayDat
+                    ? format(
+                        new Date(
+                          selectedOrder.NgayDat || selectedOrder.ngayDat
+                        ),
+                        "dd/MM/yyyy HH:mm",
+                        { locale: vi }
+                      )
+                    : "-"}
+                </p>
+                <p>
+                  <strong>Trạng thái:</strong>{" "}
+                  <Tag
+                    color={
+                      statusConfig[
+                        selectedOrder.TrangThai || selectedOrder.trangThai
+                      ]?.color || "default"
+                    }
+                  >
+                    {statusConfig[
+                      selectedOrder.TrangThai || selectedOrder.trangThai
+                    ]?.label ||
+                      selectedOrder.TrangThai ||
+                      selectedOrder.trangThai}
+                  </Tag>
+                </p>
+              </div>
+            </div>
+
+            <div className="detail-section">
+              <h4>Chi tiết món ăn</h4>
+              <Table
+                dataSource={
+                  selectedOrder.chiTietDonHang ||
+                  selectedOrder.ChiTietDonHang ||
+                  []
+                }
+                columns={[
+                  {
+                    title: "Tên món",
+                    key: "tenMon",
+                    render: (_, record) => {
+                      const monAn = record.monAn || record.MonAn;
+                      return monAn?.TenMon || monAn?.tenMon || "-";
+                    },
+                  },
+                  {
+                    title: "Số lượng",
+                    dataIndex: "SoLuong",
+                    key: "SoLuong",
+                    render: (text, record) => text || record.soLuong || 0,
+                  },
+                  {
+                    title: "Đơn giá",
+                    dataIndex: "DonGia",
+                    key: "DonGia",
+                    render: (text, record) => {
+                      const price = text || record.donGia || 0;
+                      return `${price.toLocaleString("vi-VN")} VNĐ`;
+                    },
+                  },
+                  {
+                    title: "Thành tiền",
+                    dataIndex: "ThanhTien",
+                    key: "ThanhTien",
+                    render: (text, record) => {
+                      const total = text || record.thanhTien || 0;
+                      return (
+                        <Text strong>{total.toLocaleString("vi-VN")} VNĐ</Text>
+                      );
+                    },
+                  },
+                ]}
+                pagination={false}
+                summary={() => {
+                  const chiTiet =
+                    selectedOrder.chiTietDonHang ||
+                    selectedOrder.ChiTietDonHang ||
+                    [];
+                  const tongTien = chiTiet.reduce(
+                    (sum, item) =>
+                      sum + (item.ThanhTien || item.thanhTien || 0),
+                    0
+                  );
+                  return (
+                    <Table.Summary fixed>
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0} colSpan={3}>
+                          <Text strong>Tổng tiền:</Text>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={1}>
+                          <Text
+                            strong
+                            style={{ color: "#1890ff", fontSize: 16 }}
+                          >
+                            {tongTien.toLocaleString("vi-VN")} VNĐ
+                          </Text>
+                        </Table.Summary.Cell>
+                      </Table.Summary.Row>
+                    </Table.Summary>
+                  );
+                }}
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
+
+      {/* Status Update Modal */}
+      <Modal
+        title="Cập nhật trạng thái đơn hàng"
+        open={showStatusModal}
+        onCancel={() => {
+          setShowStatusModal(false);
+          setSelectedOrder(null);
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={statusForm} onFinish={handleUpdateStatus}>
+          <Form.Item
+            label="Trạng thái"
+            name="trangThai"
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+          >
+            <Select placeholder="Chọn trạng thái">
+              {Object.entries(statusConfig).map(([key, config]) => (
+                <Select.Option key={key} value={key}>
+                  <Tag color={config.color}>{config.label}</Tag>
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <div className="modal-actions">
+            <Button onClick={() => setShowStatusModal(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Cập nhật
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };

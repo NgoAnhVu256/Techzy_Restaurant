@@ -5,18 +5,17 @@ import Cart from "./pages/Cart/Cart";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import LoginPopup from "./components/LoginPopup/LoginPopup";
-import PlaceOrder from "./pages/PlaceOrder/PlaceOrder";
 import Reservation from "./components/Reservation/Reservation";
 import AccountManagement from "./components/AccountManagement/AccountManagement";
 import PromotionManagement from "./components/PromotionManagement/PromotionManagement";
 import SupplierManagement from "./components/SupplierManagement/SupplierManagement";
-import StorageManagement from './components/StorageManagement/StorageManagement';
-import EmployeeManagement from './components/EmployeeManagement/EmployeeManagement';
-import RevenueStatistics from './components/RevenueStatistics/RevenueStatistics';
-import OrderManagement from './components/OrderManagement/OrderManagement';
-import MenuManagement from './components/MenuManagement/MenuManagement';
-import WorkSchedule from './components/WorkSchedule/WorkSchedule';
-import CustomerManagement from './components/CustomerManagement/CustomerManagement';
+import StorageManagement from "./components/StorageManagement/StorageManagement";
+import EmployeeManagement from "./components/EmployeeManagement/EmployeeManagement";
+import RevenueStatistics from "./components/RevenueStatistics/RevenueStatistics";
+import OrderManagement from "./components/OrderManagement/OrderManagement";
+import MenuManagement from "./components/MenuManagement/MenuManagement";
+import WorkSchedule from "./components/WorkSchedule/WorkSchedule";
+import CustomerManagement from "./components/CustomerManagement/CustomerManagement";
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);

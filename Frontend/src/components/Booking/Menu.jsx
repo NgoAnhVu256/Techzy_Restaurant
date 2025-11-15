@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/axios';
+import api from '@/utils/axios';
+import { FILE_BASE_URL } from '@/config/apiConfig';
 
 const Menu = ({ onAddToCart, selectedItems }) => {
   const [menuItems, setMenuItems] = useState([]);
@@ -18,7 +19,7 @@ const Menu = ({ onAddToCart, selectedItems }) => {
             GiaSauGiam: item.giaSauGiam,
             MaLoai: item.maLoai,
             LoaiMon: item.loaiMon,
-            HinhAnh: `http://localhost:5078/images/${item.hinhAnh}`,
+            HinhAnh: `${FILE_BASE_URL}/images/${item.hinhAnh}`,
             MaKM: item.maKM,
             PhanTramGiam: item.phanTramGiam
           }));

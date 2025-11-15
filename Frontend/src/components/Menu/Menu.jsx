@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Menu.css";
-import axios from "axios";
+import api from "@/utils/axios";
+import { FILE_BASE_URL } from "@/config/apiConfig";
 
 const Menu = ({ category, setCategory }) => {
   const [menuCategories, setMenuCategories] = useState([]);
@@ -8,10 +9,10 @@ const Menu = ({ category, setCategory }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5078/api/LoaiMon");
+        const response = await api.get("/LoaiMon");
         const formattedCategories = response.data.map((item) => ({
           menu_name: item.tenLoai,
-          menu_image: `http://localhost:5078/images/${item.hinhAnh}`,
+          menu_image: `${FILE_BASE_URL}/images/${item.hinhAnh}`,
         }));
         setMenuCategories(formattedCategories);
       } catch (error) {

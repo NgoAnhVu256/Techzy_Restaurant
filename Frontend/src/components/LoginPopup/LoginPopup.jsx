@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './LoginPopup.css'
 import { assets } from '../../assets/assets'
 import { StoreContext } from '../../Context/StoreContext';
-import api from '../../utils/axios';
+import api from '@/utils/axios';
 
 const LoginPopup = ({ setShowLogin }) => {
   const [currState, setCurrState] = useState("Login")

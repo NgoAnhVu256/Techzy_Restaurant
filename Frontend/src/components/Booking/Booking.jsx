@@ -3,7 +3,7 @@ import BookingOptionSelector from './BookingOptionSelector';
 import BookingForm from './BookingForm';
 import Menu from './Menu';
 import Cart from './Cart';
-import api from '../../utils/axios'; // Import api instance
+import api from '@/utils/axios'; // Import api instance
 
 const Booking = () => {
   const [step, setStep] = useState('select-option'); // select-option, select-food, booking-form

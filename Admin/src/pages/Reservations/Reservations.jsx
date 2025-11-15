@@ -1,43 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./Reservations.css";
-import axios from "axios";
+import api from "../../utils/axios";
 import { toast } from "react-toastify";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Typography,
+  Tag,
+} from "antd";
+import { FiEdit2, FiTrash2, FiPlus, FiEye } from "react-icons/fi";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+
+const { Text } = Typography;
 
 const Reservations = () => {
   const [reservations, setReservations] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [tables, setTables] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [newReservation, setNewReservation] = useState({
-    tenKhachHang: "",
-    soDienThoai: "",
-    ngayDat: "",
-    gioVao: "",
-    soNguoi: "",
-    ghiChu: "",
-  });
-  const [selectedFoods, setSelectedFoods] = useState([]);
   const [showFoodsModal, setShowFoodsModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [selectedFoods, setSelectedFoods] = useState([]);
+  const [addForm] = Form.useForm();
+  const [editForm] = Form.useForm();
 
-  // Fetch reservations
   const fetchReservations = async () => {
     try {
-      const response = await axios.get("http://localhost:5078/api/DatBan");
-      setReservations(response.data);
+      const response = await api.get("/reservations");
+      setReservations(response.data.data || []);
     } catch (error) {
       toast.error("Lỗi khi tải danh sách đặt bàn");
     }
   };
 
-  // Fetch foods for a reservation
   const fetchReservationFoods = async (maDatBan) => {
     try {
-      const response = await axios.get(`http://localhost:5078/api/DatBan/${maDatBan}/MonAn`);
-      setSelectedFoods(response.data);
+      const response = await api.get(`/reservations/${maDatBan}/monan`);
+      setSelectedFoods(response.data.data || []);
       setShowFoodsModal(true);
     } catch (error) {
       toast.error("Lỗi khi tải thông tin món ăn");
@@ -45,402 +53,579 @@ const Reservations = () => {
     }
   };
 
-  // Thêm interval để tự động làm mới danh sách mỗi 30 giây
-  useEffect(() => {
-    fetchReservations(); // Lấy dữ liệu lần đầu
-
-    const interval = setInterval(() => {
-      fetchReservations(); // Tự động làm mới
-    }, 30000);
-
-    return () => clearInterval(interval); // Cleanup khi component unmount
-  }, []);
-
-  // Add new reservation
-  const handleAdd = async () => {
+  const fetchCustomers = async () => {
     try {
-      await axios.post("http://localhost:5078/api/DatBan", newReservation);
-      toast.success("Thêm đặt bàn thành công");
-      fetchReservations();
-      setShowAddModal(false);
-      setNewReservation({
-        tenKhachHang: "",
-        soDienThoai: "",
-        ngayDat: "",
-        gioVao: "",
-        soNguoi: "",
-        ghiChu: "",
-      });
+      const response = await api.get("/customers");
+      setCustomers(response.data.data || []);
     } catch (error) {
-      toast.error("Lỗi khi thêm đặt bàn");
+      console.error("Error fetching customers:", error);
     }
   };
 
-  // Edit reservation
-  const handleEdit = async () => {
+  const fetchTables = async () => {
     try {
-      await axios.put(
-        `http://localhost:5078/api/DatBan/${selectedReservation.maDatBan}`,
-        selectedReservation
+      const response = await api.get("/tables");
+      setTables(response.data.data || []);
+    } catch (error) {
+      console.error("Error fetching tables:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReservations();
+    fetchCustomers();
+    fetchTables();
+    const interval = setInterval(() => {
+      fetchReservations();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (showEditModal && selectedReservation) {
+      const reservation = selectedReservation;
+      editForm.setFieldsValue({
+        maBan: reservation.MaBan || reservation.maBan || "",
+        maKH: reservation.MaKH || reservation.maKH || "",
+        thoiGianBatDau:
+          reservation.ThoiGianBatDau || reservation.thoiGianBatDau
+            ? new Date(reservation.ThoiGianBatDau || reservation.thoiGianBatDau)
+                .toISOString()
+                .slice(0, 16)
+            : "",
+        thoiGianKetThuc:
+          reservation.ThoiGianKetThuc || reservation.thoiGianKetThuc
+            ? new Date(
+                reservation.ThoiGianKetThuc || reservation.thoiGianKetThuc
+              )
+                .toISOString()
+                .slice(0, 16)
+            : "",
+        soNguoi: reservation.SoNguoi || reservation.soNguoi || 1,
+        ghiChu: reservation.GhiChu || reservation.ghiChu || "",
+      });
+    }
+  }, [showEditModal, selectedReservation, editForm]);
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    addForm.resetFields();
+  };
+
+  const handleAdd = async (values) => {
+    try {
+      await api.post("/reservations", {
+        MaBan: values.maBan,
+        MaKH: values.maKH,
+        ThoiGianBatDau: values.thoiGianBatDau,
+        ThoiGianKetThuc: values.thoiGianKetThuc,
+        SoNguoi: parseInt(values.soNguoi),
+        GhiChu: values.ghiChu || "",
+      });
+      toast.success("Thêm đặt bàn thành công");
+      fetchReservations();
+      closeAddModal();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi thêm đặt bàn: " + errorMessage);
+    }
+  };
+
+  const handleEdit = async (values) => {
+    if (!selectedReservation) return;
+    try {
+      await api.put(
+        `/reservations/${
+          selectedReservation.MaDatBan || selectedReservation.maDatBan
+        }`,
+        {
+          MaBan: values.maBan,
+          MaKH: values.maKH,
+          ThoiGianBatDau: values.thoiGianBatDau,
+          ThoiGianKetThuc: values.thoiGianKetThuc,
+          SoNguoi: parseInt(values.soNguoi),
+          GhiChu: values.ghiChu || "",
+        }
       );
       toast.success("Cập nhật đặt bàn thành công");
       fetchReservations();
       setShowEditModal(false);
+      setSelectedReservation(null);
     } catch (error) {
-      toast.error("Lỗi khi cập nhật đặt bàn");
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi cập nhật đặt bàn: " + errorMessage);
     }
   };
 
-  // Delete reservation
   const handleDelete = async () => {
+    if (!selectedReservation) return;
     try {
-      await axios.delete(
-        `http://localhost:5078/api/DatBan/${selectedReservation.maDatBan}`
+      await api.delete(
+        `/reservations/${
+          selectedReservation.MaDatBan || selectedReservation.maDatBan
+        }`
       );
       toast.success("Xóa đặt bàn thành công");
       fetchReservations();
       setShowDeleteModal(false);
+      setSelectedReservation(null);
     } catch (error) {
-      toast.error("Lỗi khi xóa đặt bàn");
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error("Lỗi khi xóa đặt bàn: " + errorMessage);
     }
   };
 
-  // Filter reservations
-  const filteredReservations = reservations.filter(
-    (reservation) =>
-      reservation.khachHang?.hoTen
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      reservation.khachHang?.soDienThoai.includes(searchTerm)
-  );
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return format(date, "HH:mm dd/MM/yyyy", { locale: vi });
+    } catch (error) {
+      return "-";
+    }
+  };
 
-  // Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredReservations.slice(
-    indexOfFirstItem,
-    indexOfLastItem
+  const columns = useMemo(
+    () => [
+      {
+        title: "Mã đặt bàn",
+        dataIndex: "MaDatBan",
+        key: "MaDatBan",
+        render: (text, record) => text || record.maDatBan,
+      },
+      {
+        title: "Tên bàn",
+        key: "ban",
+        render: (_, record) => record.ban?.TenBan || record.ban?.tenBan || "-",
+      },
+      {
+        title: "Khách hàng",
+        key: "khachHang",
+        render: (_, record) =>
+          record.khachHang?.HoTen || record.khachHang?.hoTen || "-",
+      },
+      {
+        title: "Số điện thoại",
+        key: "phone",
+        render: (_, record) =>
+          record.khachHang?.SoDienThoai || record.khachHang?.soDienThoai || "-",
+      },
+      {
+        title: "Ngày đặt",
+        dataIndex: "NgayDat",
+        key: "NgayDat",
+        render: (text, record) => {
+          const date = text || record.ngayDat;
+          return date
+            ? format(new Date(date), "dd/MM/yyyy", { locale: vi })
+            : "-";
+        },
+      },
+      {
+        title: "Thời gian bắt đầu",
+        dataIndex: "ThoiGianBatDau",
+        key: "ThoiGianBatDau",
+        render: (text, record) => formatDateTime(text || record.thoiGianBatDau),
+      },
+      {
+        title: "Thời gian kết thúc",
+        dataIndex: "ThoiGianKetThuc",
+        key: "ThoiGianKetThuc",
+        render: (text, record) =>
+          formatDateTime(text || record.thoiGianKetThuc),
+      },
+      {
+        title: "Số người",
+        dataIndex: "SoNguoi",
+        key: "SoNguoi",
+        render: (text, record) => text || record.soNguoi || "-",
+      },
+      {
+        title: "Ghi chú",
+        dataIndex: "GhiChu",
+        key: "GhiChu",
+        render: (text, record) => {
+          const note = text || record.ghiChu;
+          return note ? (
+            <Text ellipsis={{ tooltip: note }} style={{ maxWidth: 150 }}>
+              {note}
+            </Text>
+          ) : (
+            "-"
+          );
+        },
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        render: (_, record) => (
+          <Space>
+            <Button
+              icon={<FiEye />}
+              onClick={() =>
+                fetchReservationFoods(record.MaDatBan || record.maDatBan)
+              }
+            >
+              Món ăn
+            </Button>
+            <Button
+              icon={<FiEdit2 />}
+              onClick={() => {
+                setSelectedReservation(record);
+                setShowEditModal(true);
+              }}
+            >
+              Sửa
+            </Button>
+            <Button
+              icon={<FiTrash2 />}
+              danger
+              onClick={() => {
+                setSelectedReservation(record);
+                setShowDeleteModal(true);
+              }}
+            >
+              Xóa
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    []
   );
-  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
 
   return (
-    <div className="reservations-container">
-      <div className="reservations-header">
-        <h2>Quản lý đặt bàn</h2>
-        <div className="reservations-actions">
-          <input
-            type="text"
-            placeholder="Tìm kiếm..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          <button className="add-button" onClick={() => setShowAddModal(true)}>
-            Thêm đặt bàn
-          </button>
+    <div className="reservations-page">
+      <div className="page-header">
+        <div>
+          <p className="page-eyebrow">Quản lý bán hàng / Đặt bàn</p>
+          <h2>Quản lý Đặt bàn</h2>
         </div>
+        <Button
+          type="primary"
+          icon={<FiPlus />}
+          size="large"
+          onClick={() => {
+            addForm.resetFields();
+            setShowAddModal(true);
+          }}
+        >
+          Thêm Đặt bàn
+        </Button>
       </div>
 
-      <table className="reservations-table">
-        <thead>
-          <tr>
-            <th>Mã đặt bàn</th>
-            <th>Tên bàn</th>
-            <th>Tên khách hàng</th>
-            <th>Số điện thoại</th>
-            <th>Ngày đặt</th>
-            <th>Thời gian bắt đầu</th>
-            <th>Thời gian kết thúc</th>
-            <th>Số người</th>
-            <th>Ghi chú</th>
-            <th>Món ăn</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentItems.map((reservation) => (
-            <tr key={reservation.maDatBan}>
-              <td>{reservation.maDatBan}</td>
-              <td>{reservation.ban?.tenBan}</td>
-              <td>{reservation.khachHang?.hoTen}</td>
-              <td>{reservation.khachHang?.soDienThoai}</td>
-              <td>{new Date(reservation.ngayDat).toLocaleDateString('vi-VN')}</td>
-              <td>{new Date(new Date(reservation.thoiGianBatDau).getTime() + 5 * 60 * 60 * 1000).toLocaleTimeString('vi-VN', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false
-              })}</td>
-              <td>{new Date(new Date(reservation.thoiGianKetThuc).getTime() + 5 * 60 * 60 * 1000).toLocaleTimeString('vi-VN', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false
-              })}</td>
-              <td>{reservation.soNguoi}</td>
-              <td className="note-cell">{reservation.ghiChu}</td>
-              <td>
-                <button
-                  className="view-foods-button"
-                  onClick={() => fetchReservationFoods(reservation.maDatBan)}
-                >
-                  Xem món ăn
-                </button>
-              </td>
-              <td>
-                <button
-                  className="edit-button"
-                  onClick={() => {
-                    setSelectedReservation(reservation);
-                    setShowEditModal(true);
-                  }}
-                >
-                  Sửa
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={() => {
-                    setSelectedReservation(reservation);
-                    setShowDeleteModal(true);
-                  }}
-                >
-                  Xóa
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="pagination">
-        <button
-          onClick={() => setCurrentPage(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Trước
-        </button>
-        <span>{currentPage}</span>
-        <button
-          onClick={() => setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Sau
-        </button>
+      <div className="reservations-card">
+        <Table
+          columns={columns}
+          dataSource={reservations}
+          rowKey={(record) => record.MaDatBan || record.maDatBan}
+          pagination={{ pageSize: 10 }}
+        />
       </div>
 
       {/* Foods Modal */}
-      {showFoodsModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Chi tiết món ăn đã đặt</h3>
-              <button onClick={() => setShowFoodsModal(false)} className="close-button">
-                &times;
-              </button>
-            </div>
-            <div className="foods-list">
-              {selectedFoods.length > 0 ? (
-                <table className="foods-table">
-                  <thead>
-                    <tr>
-                      <th>Tên món</th>
-                      <th>Số lượng</th>
-                      <th>Đơn giá</th>
-                      <th>Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedFoods.map((food) => (
-                      <tr key={food.id}>
-                        <td>{food.tenMon}</td>
-                        <td>{food.soLuong}</td>
-                        <td>{food.donGia.toLocaleString()} VNĐ</td>
-                        <td>{(food.soLuong * food.donGia).toLocaleString()} VNĐ</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colSpan="3" className="total-label">Tổng tiền:</td>
-                      <td className="total-amount">
-                        {selectedFoods
-                          .reduce((total, food) => total + food.soLuong * food.donGia, 0)
-                          .toLocaleString()} VNĐ
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              ) : (
-                <p>Không có món ăn nào được đặt</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        title="Chi tiết món ăn đã đặt"
+        open={showFoodsModal}
+        onCancel={() => setShowFoodsModal(false)}
+        footer={null}
+        width={800}
+      >
+        {selectedFoods.length > 0 ? (
+          <Table
+            dataSource={selectedFoods}
+            columns={[
+              {
+                title: "Tên món",
+                dataIndex: "tenMon",
+                key: "tenMon",
+              },
+              {
+                title: "Số lượng",
+                dataIndex: "soLuong",
+                key: "soLuong",
+              },
+              {
+                title: "Đơn giá",
+                dataIndex: "donGia",
+                key: "donGia",
+                render: (price) => `${price?.toLocaleString()} VNĐ`,
+              },
+              {
+                title: "Thành tiền",
+                key: "total",
+                render: (_, record) =>
+                  `${(
+                    (record.soLuong || 0) * (record.donGia || 0)
+                  ).toLocaleString()} VNĐ`,
+              },
+            ]}
+            pagination={false}
+            summary={() => (
+              <Table.Summary fixed>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} colSpan={3}>
+                    <Text strong>Tổng tiền:</Text>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1}>
+                    <Text strong>
+                      {selectedFoods
+                        .reduce(
+                          (total, food) =>
+                            total + (food.soLuong || 0) * (food.donGia || 0),
+                          0
+                        )
+                        .toLocaleString()}{" "}
+                      VNĐ
+                    </Text>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              </Table.Summary>
+            )}
+          />
+        ) : (
+          <p>Không có món ăn nào được đặt</p>
+        )}
+      </Modal>
 
       {/* Add Modal */}
-      {showAddModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Thêm đặt bàn mới</h3>
-            <input
-              type="text"
-              placeholder="Tên khách hàng"
-              value={newReservation.tenKhachHang}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  tenKhachHang: e.target.value,
-                })
-              }
+      <Modal
+        title="Thêm đặt bàn mới"
+        open={showAddModal}
+        onCancel={closeAddModal}
+        footer={null}
+        destroyOnClose
+        width={600}
+      >
+        <Form
+          layout="vertical"
+          form={addForm}
+          onFinish={handleAdd}
+          initialValues={{
+            maBan: "",
+            maKH: "",
+            thoiGianBatDau: "",
+            thoiGianKetThuc: "",
+            soNguoi: 1,
+            ghiChu: "",
+          }}
+        >
+          <Form.Item
+            label="Bàn"
+            name="maBan"
+            rules={[{ required: true, message: "Vui lòng chọn bàn" }]}
+          >
+            <Select
+              placeholder="Chọn bàn"
+              showSearch
+              optionFilterProp="children"
+            >
+              {tables.map((table) => (
+                <Select.Option
+                  key={table.MaBan || table.maBan}
+                  value={table.MaBan || table.maBan}
+                >
+                  {table.TenBan || table.tenBan} - Sức chứa:{" "}
+                  {table.SucChua || table.sucChua} người
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Khách hàng"
+            name="maKH"
+            rules={[{ required: true, message: "Vui lòng chọn khách hàng" }]}
+          >
+            <Select
+              placeholder="Chọn khách hàng"
+              showSearch
+              optionFilterProp="children"
+            >
+              {customers.map((customer) => (
+                <Select.Option
+                  key={customer.MaKH || customer.maKhachHang}
+                  value={customer.MaKH || customer.maKhachHang}
+                >
+                  {customer.HoTen || customer.hoTen} -{" "}
+                  {customer.SoDienThoai || customer.soDienThoai}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Thời gian bắt đầu"
+            name="thoiGianBatDau"
+            rules={[
+              { required: true, message: "Vui lòng chọn thời gian bắt đầu" },
+            ]}
+          >
+            <Input
+              type="datetime-local"
+              min={new Date().toISOString().slice(0, 16)}
             />
-            <input
-              type="text"
-              placeholder="Số điện thoại"
-              value={newReservation.soDienThoai}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  soDienThoai: e.target.value,
-                })
-              }
+          </Form.Item>
+
+          <Form.Item
+            label="Thời gian kết thúc"
+            name="thoiGianKetThuc"
+            rules={[
+              { required: true, message: "Vui lòng chọn thời gian kết thúc" },
+            ]}
+          >
+            <Input type="datetime-local" />
+          </Form.Item>
+
+          <Form.Item
+            label="Số người"
+            name="soNguoi"
+            rules={[
+              { required: true, message: "Vui lòng nhập số người" },
+              { type: "number", min: 1, message: "Số người phải lớn hơn 0" },
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập số người"
+              style={{ width: "100%" }}
+              min={1}
             />
-            <input
-              type="date"
-              value={newReservation.ngayDat}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  ngayDat: e.target.value,
-                })
-              }
-            />
-            <input
-              type="time"
-              value={newReservation.gioVao}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  gioVao: e.target.value,
-                })
-              }
-            />
-            <input
-              type="number"
-              placeholder="Số người"
-              value={newReservation.soNguoi}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  soNguoi: e.target.value,
-                })
-              }
-            />
-            <textarea
-              placeholder="Ghi chú"
-              value={newReservation.ghiChu}
-              onChange={(e) =>
-                setNewReservation({
-                  ...newReservation,
-                  ghiChu: e.target.value,
-                })
-              }
-            />
-            <div className="modal-actions">
-              <button onClick={handleAdd}>Thêm</button>
-              <button onClick={() => setShowAddModal(false)}>Hủy</button>
-            </div>
+          </Form.Item>
+
+          <Form.Item label="Ghi chú" name="ghiChu">
+            <Input.TextArea placeholder="Nhập ghi chú (nếu có)" rows={3} />
+          </Form.Item>
+
+          <div className="modal-actions">
+            <Button onClick={closeAddModal}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Thêm
+            </Button>
           </div>
-        </div>
-      )}
+        </Form>
+      </Modal>
 
       {/* Edit Modal */}
-      {showEditModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Sửa thông tin đặt bàn</h3>
-            <input
-              type="text"
-              placeholder="Tên khách hàng"
-              value={selectedReservation.tenKhachHang}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  tenKhachHang: e.target.value,
-                })
-              }
+      <Modal
+        title="Chỉnh sửa đặt bàn"
+        open={showEditModal}
+        onCancel={() => {
+          setShowEditModal(false);
+          setSelectedReservation(null);
+        }}
+        footer={null}
+        destroyOnClose
+        width={600}
+      >
+        <Form layout="vertical" form={editForm} onFinish={handleEdit}>
+          <Form.Item
+            label="Bàn"
+            name="maBan"
+            rules={[{ required: true, message: "Vui lòng chọn bàn" }]}
+          >
+            <Select
+              placeholder="Chọn bàn"
+              showSearch
+              optionFilterProp="children"
+            >
+              {tables.map((table) => (
+                <Select.Option
+                  key={table.MaBan || table.maBan}
+                  value={table.MaBan || table.maBan}
+                >
+                  {table.TenBan || table.tenBan} - Sức chứa:{" "}
+                  {table.SucChua || table.sucChua} người
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Khách hàng"
+            name="maKH"
+            rules={[{ required: true, message: "Vui lòng chọn khách hàng" }]}
+          >
+            <Select
+              placeholder="Chọn khách hàng"
+              showSearch
+              optionFilterProp="children"
+            >
+              {customers.map((customer) => (
+                <Select.Option
+                  key={customer.MaKH || customer.maKhachHang}
+                  value={customer.MaKH || customer.maKhachHang}
+                >
+                  {customer.HoTen || customer.hoTen} -{" "}
+                  {customer.SoDienThoai || customer.soDienThoai}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Thời gian bắt đầu"
+            name="thoiGianBatDau"
+            rules={[
+              { required: true, message: "Vui lòng chọn thời gian bắt đầu" },
+            ]}
+          >
+            <Input type="datetime-local" />
+          </Form.Item>
+
+          <Form.Item
+            label="Thời gian kết thúc"
+            name="thoiGianKetThuc"
+            rules={[
+              { required: true, message: "Vui lòng chọn thời gian kết thúc" },
+            ]}
+          >
+            <Input type="datetime-local" />
+          </Form.Item>
+
+          <Form.Item
+            label="Số người"
+            name="soNguoi"
+            rules={[
+              { required: true, message: "Vui lòng nhập số người" },
+              { type: "number", min: 1, message: "Số người phải lớn hơn 0" },
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập số người"
+              style={{ width: "100%" }}
+              min={1}
             />
-            <input
-              type="text"
-              placeholder="Số điện thoại"
-              value={selectedReservation.soDienThoai}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  soDienThoai: e.target.value,
-                })
-              }
-            />
-            <input
-              type="date"
-              value={selectedReservation.ngayDat.split("T")[0]}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  ngayDat: e.target.value,
-                })
-              }
-            />
-            <input
-              type="time"
-              value={selectedReservation.gioVao}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  gioVao: e.target.value,
-                })
-              }
-            />
-            <input
-              type="number"
-              placeholder="Số người"
-              value={selectedReservation.soNguoi}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  soNguoi: e.target.value,
-                })
-              }
-            />
-            <textarea
-              placeholder="Ghi chú"
-              value={selectedReservation.ghiChu}
-              onChange={(e) =>
-                setSelectedReservation({
-                  ...selectedReservation,
-                  ghiChu: e.target.value,
-                })
-              }
-            />
-            <div className="modal-actions">
-              <button onClick={handleEdit}>Lưu</button>
-              <button onClick={() => setShowEditModal(false)}>Hủy</button>
-            </div>
+          </Form.Item>
+
+          <Form.Item label="Ghi chú" name="ghiChu">
+            <Input.TextArea placeholder="Nhập ghi chú (nếu có)" rows={3} />
+          </Form.Item>
+
+          <div className="modal-actions">
+            <Button onClick={() => setShowEditModal(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit">
+              Lưu
+            </Button>
           </div>
-        </div>
-      )}
+        </Form>
+      </Modal>
 
       {/* Delete Modal */}
-      {showDeleteModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Xác nhận xóa</h3>
-            <p>Bạn có chắc chắn muốn xóa đặt bàn này?</p>
-            <div className="modal-actions">
-              <button onClick={handleDelete}>Xóa</button>
-              <button onClick={() => setShowDeleteModal(false)}>Hủy</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        title="Xác nhận xóa"
+        open={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onOk={handleDelete}
+        okButtonProps={{ danger: true }}
+        okText="Xóa"
+        cancelText="Hủy"
+      >
+        <p>Bạn có chắc chắn muốn xóa đặt bàn này không?</p>
+        <Text strong>
+          Mã đặt bàn:{" "}
+          {selectedReservation?.MaDatBan || selectedReservation?.maDatBan}
+        </Text>
+      </Modal>
     </div>
   );
 };

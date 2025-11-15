@@ -1,0 +1,144 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optional: Background image với blur effect */
+.login-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920");
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px) brightness(0.4);
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: none;
+  padding: 40px;
+  background: white;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f1841;
+  margin: 0;
+  margin-top: 12px;
+}
+
+.login-form {
+  margin-top: 8px;
+}
+
+.login-input {
+  height: 48px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.login-input .ant-input-prefix {
+  color: #8c8c8c;
+  margin-right: 12px;
+}
+
+.login-input:focus,
+.login-input:hover {
+  border-color: #1a2d8a;
+}
+
+.login-input.ant-input-affix-wrapper-focused {
+  border-color: #1a2d8a;
+  box-shadow: 0 0 0 2px rgba(26, 45, 138, 0.1);
+}
+
+.login-button {
+  height: 48px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #1a2d8a 0%, #0f1841 100%);
+  border: none;
+  margin-top: 8px;
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  background: linear-gradient(135deg, #0f1841 0%, #1a2d8a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 45, 138, 0.3);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+/* Ant Design Form Item spacing */
+.login-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.login-form .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 32px 24px;
+    max-width: 100%;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .login-logo-img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .login-input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .login-button {
+    height: 44px;
+    font-size: 15px;
+  }
+}
+

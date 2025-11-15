@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './MenuManagement.css';
 
 const MenuManagement = () => {
@@ -26,7 +26,7 @@ const MenuManagement = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/menu');
+      const response = await api.get('/menu');
       setMenuItems(response.data);
       setError('');
     } catch (err) {
@@ -50,10 +50,10 @@ const MenuManagement = () => {
     try {
       setLoading(true);
       if (selectedItem) {
-        await axios.put(`http://localhost:5000/api/menu/${selectedItem._id}`, formData);
+        await api.put(`/menu/${selectedItem._id}`, formData);
         setSuccess('Menu item updated successfully');
       } else {
-        await axios.post('http://localhost:5000/api/menu', formData);
+        await api.post('/menu', formData);
         setSuccess('Menu item added successfully');
       }
       setFormData({
@@ -89,7 +89,7 @@ const MenuManagement = () => {
   const handleToggleStatus = async (itemId, currentStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5000/api/menu/${itemId}`, {
+      await api.patch(`/menu/${itemId}`, {
         status: currentStatus === 'active' ? 'inactive' : 'active'
       });
       setSuccess('Menu item status updated successfully');

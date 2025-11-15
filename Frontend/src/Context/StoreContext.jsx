@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from "react";
-import api from "../utils/axios";
+import api from "@/utils/axios";
+import { FILE_BASE_URL } from "@/config/apiConfig";
 
 export const StoreContext = createContext(null);
 
@@ -68,7 +69,7 @@ const StoreContextProvider = (props) => {
           name: item.tenMon,
           price: item.gia,
           category: item.loaiMon.tenLoai,
-          image: `http://localhost:5078/images/${item.hinhAnh}`,
+          image: `${FILE_BASE_URL}/images/${item.hinhAnh}`,
         }));
         setFoodList(formattedFoods);
       } catch (error) {

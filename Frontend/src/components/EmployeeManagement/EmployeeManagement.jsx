@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/axios';
 import './EmployeeManagement.css';
 
 const EmployeeManagement = () => {
@@ -25,7 +25,7 @@ const EmployeeManagement = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/employees');
+      const response = await api.get('/employees');
       setEmployees(response.data);
       setError('');
     } catch (err) {
@@ -48,7 +48,7 @@ const EmployeeManagement = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/employees', formData);
+      await api.post('/employees', formData);
       setSuccess('Employee added successfully');
       setFormData({
         name: '',
@@ -71,7 +71,7 @@ const EmployeeManagement = () => {
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       setLoading(true);
-      await axios.patch(`http://localhost:5000/api/employees/${id}`, {
+      await api.patch(`/employees/${id}`, {
         status: currentStatus === 'active' ? 'inactive' : 'active'
       });
       setSuccess('Status updated successfully');
