@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./Categories.css";
 import api from "../../utils/axios";
 import { toast } from "react-toastify";
-import { FILE_BASE_URL } from "../../config/apiConfig";
 import {
   Button,
   Table,
@@ -191,7 +190,7 @@ const Categories = () => {
         key: "HinhAnh",
         render: (image, record) => (
           <img
-            src={`${FILE_BASE_URL}/images/${image || record.HinhAnh}`}
+            src={image || record.HinhAnh}
             alt={record.TenLoai || record.tenLoai}
             className="category-thumb"
           />
@@ -348,9 +347,7 @@ const Categories = () => {
           <Form.Item label="Hình ảnh hiện tại">
             <div className="current-image">
               <img
-                src={`${FILE_BASE_URL}/images/${
-                  selectedCategory?.HinhAnh || selectedCategory?.hinhAnh
-                }`}
+                src={selectedCategory?.HinhAnh || selectedCategory?.hinhAnh}
                 alt={selectedCategory?.TenLoai || selectedCategory?.tenLoai}
               />
             </div>

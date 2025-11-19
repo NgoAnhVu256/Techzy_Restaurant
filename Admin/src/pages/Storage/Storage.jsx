@@ -58,10 +58,16 @@ const Storage = () => {
   useEffect(() => {
     if (showEditModal && selectedMaterial) {
       editForm.setFieldsValue({
-        tenNguyenVatLieu: selectedMaterial.TenNguyenVatLieu || selectedMaterial.tenNguyenVatLieu,
+        tenNguyenVatLieu:
+          selectedMaterial.TenNguyenVatLieu ||
+          selectedMaterial.tenNguyenVatLieu,
         donViTinh: selectedMaterial.DonViTinh || selectedMaterial.donViTinh,
-        soLuongTon: selectedMaterial.SoLuongTon || selectedMaterial.soLuongTon || 0,
-        maNhaCungCap: selectedMaterial.MaNhaCungCap || selectedMaterial.maNhaCungCap || null,
+        soLuongTon:
+          selectedMaterial.SoLuongTon || selectedMaterial.soLuongTon || 0,
+        maNhaCungCap:
+          selectedMaterial.MaNhaCungCap ||
+          selectedMaterial.maNhaCungCap ||
+          null,
       });
     }
   }, [showEditModal, selectedMaterial, editForm]);
@@ -92,7 +98,9 @@ const Storage = () => {
     if (!selectedMaterial) return;
     try {
       await api.put(
-        `/storage/${selectedMaterial.MaNguyenVatLieu || selectedMaterial.maNguyenVatLieu}`,
+        `/storage/${
+          selectedMaterial.MaNguyenVatLieu || selectedMaterial.maNguyenVatLieu
+        }`,
         {
           TenNguyenVatLieu: values.tenNguyenVatLieu,
           DonViTinh: values.donViTinh,
@@ -114,11 +122,13 @@ const Storage = () => {
     if (!selectedMaterial) return;
     try {
       await api.delete(
-        `/storage/${selectedMaterial.MaNguyenVatLieu || selectedMaterial.maNguyenVatLieu}`
+        `/storage/${
+          selectedMaterial.MaNguyenVatLieu || selectedMaterial.maNguyenVatLieu
+        }`
       );
       toast.success("Xóa nguyên vật liệu thành công");
       fetchMaterials();
-      setShowDeleteModal(false);
+        setShowDeleteModal(false);
       setSelectedMaterial(null);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
@@ -157,9 +167,14 @@ const Storage = () => {
         dataIndex: "TenNguyenVatLieu",
         key: "TenNguyenVatLieu",
         render: (text, record) => (
-          <span className="material-name">{text || record.tenNguyenVatLieu}</span>
+          <span className="material-name">
+            {text || record.tenNguyenVatLieu}
+          </span>
         ),
-        sorter: (a, b) => (a.TenNguyenVatLieu || a.tenNguyenVatLieu || "").localeCompare(b.TenNguyenVatLieu || b.tenNguyenVatLieu || ""),
+        sorter: (a, b) =>
+          (a.TenNguyenVatLieu || a.tenNguyenVatLieu || "").localeCompare(
+            b.TenNguyenVatLieu || b.tenNguyenVatLieu || ""
+          ),
       },
       {
         title: "Đơn vị tính",
@@ -173,20 +188,27 @@ const Storage = () => {
         key: "SoLuongTon",
         render: (text, record) => {
           const quantity = parseFloat(text || record.soLuongTon || 0);
-          return (
-            <Text strong={quantity < 10} style={{ color: quantity < 10 ? "#ff4d4f" : "#1a1f3c" }}>
+  return (
+            <Text
+              strong={quantity < 10}
+              style={{ color: quantity < 10 ? "#ff4d4f" : "#1a1f3c" }}
+            >
               {quantity.toLocaleString("vi-VN")}
             </Text>
           );
         },
-        sorter: (a, b) => parseFloat(a.SoLuongTon || a.soLuongTon || 0) - parseFloat(b.SoLuongTon || b.soLuongTon || 0),
+        sorter: (a, b) =>
+          parseFloat(a.SoLuongTon || a.soLuongTon || 0) -
+          parseFloat(b.SoLuongTon || b.soLuongTon || 0),
       },
       {
         title: "Nhà cung cấp",
         key: "nhaCungCap",
         render: (_, record) => {
           const supplier = record.nhaCungCap || record.NhaCungCap;
-          return supplier ? (supplier.TenNhaCungCap || supplier.tenNhaCungCap) : "-";
+          return supplier
+            ? supplier.TenNhaCungCap || supplier.tenNhaCungCap
+            : "-";
         },
         filters: suppliers.map((sup) => ({
           text: sup.TenNhaCungCap || sup.tenNhaCungCap,
@@ -202,7 +224,7 @@ const Storage = () => {
           <Space>
             <Button
               icon={<FiEdit2 />}
-              onClick={() => {
+            onClick={() => {
                 setSelectedMaterial(record);
                 setShowEditModal(true);
               }}
@@ -212,11 +234,11 @@ const Storage = () => {
             <Button
               icon={<FiTrash2 />}
               danger
-              onClick={() => {
+                    onClick={() => {
                 setSelectedMaterial(record);
-                setShowDeleteModal(true);
-              }}
-            >
+                      setShowDeleteModal(true);
+                    }}
+                  >
               Xóa
             </Button>
           </Space>
@@ -241,7 +263,7 @@ const Storage = () => {
         <div>
           <p className="page-eyebrow">Quản lý Kho / Tồn kho</p>
           <h2>Quản lý Tồn kho</h2>
-        </div>
+      </div>
         <Button
           type="primary"
           icon={<FiPlus />}
@@ -288,10 +310,10 @@ const Storage = () => {
             type={lowStockFilter ? "primary" : "default"}
             onClick={() => setLowStockFilter(!lowStockFilter)}
           >
-            {lowStockFilter ? "✓ " : ""}Sắp hết hàng (< 10)
+            {`${lowStockFilter ? "✓ " : ""}Sắp hết hàng (< 10)`}
           </Button>
+          </div>
         </div>
-      </div>
 
       <div className="storage-card">
         <Table
@@ -299,8 +321,8 @@ const Storage = () => {
           dataSource={filteredMaterials}
           rowKey={(record) => record.MaNguyenVatLieu || record.maNguyenVatLieu}
           pagination={{ pageSize: 10 }}
-        />
-      </div>
+                />
+              </div>
 
       {/* Add Modal */}
       <Modal
@@ -314,12 +336,19 @@ const Storage = () => {
           layout="vertical"
           form={addForm}
           onFinish={handleAddMaterial}
-          initialValues={{ tenNguyenVatLieu: "", donViTinh: "", soLuongTon: 0, maNhaCungCap: null }}
+          initialValues={{
+            tenNguyenVatLieu: "",
+            donViTinh: "",
+            soLuongTon: 0,
+            maNhaCungCap: null,
+          }}
         >
           <Form.Item
             label="Tên nguyên vật liệu"
             name="tenNguyenVatLieu"
-            rules={[{ required: true, message: "Vui lòng nhập tên nguyên vật liệu" }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập tên nguyên vật liệu" },
+            ]}
           >
             <Input placeholder="Nhập tên nguyên vật liệu" />
           </Form.Item>
@@ -337,7 +366,11 @@ const Storage = () => {
             name="soLuongTon"
             rules={[
               { required: true, message: "Vui lòng nhập số lượng tồn" },
-              { type: "number", min: 0, message: "Số lượng phải lớn hơn hoặc bằng 0" },
+              {
+                type: "number",
+                min: 0,
+                message: "Số lượng phải lớn hơn hoặc bằng 0",
+              },
             ]}
           >
             <InputNumber
@@ -366,7 +399,7 @@ const Storage = () => {
             <Button type="primary" htmlType="submit">
               Thêm
             </Button>
-          </div>
+              </div>
         </Form>
       </Modal>
 
@@ -385,7 +418,9 @@ const Storage = () => {
           <Form.Item
             label="Tên nguyên vật liệu"
             name="tenNguyenVatLieu"
-            rules={[{ required: true, message: "Vui lòng nhập tên nguyên vật liệu" }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập tên nguyên vật liệu" },
+            ]}
           >
             <Input placeholder="Nhập tên nguyên vật liệu" />
           </Form.Item>
@@ -403,7 +438,11 @@ const Storage = () => {
             name="soLuongTon"
             rules={[
               { required: true, message: "Vui lòng nhập số lượng tồn" },
-              { type: "number", min: 0, message: "Số lượng phải lớn hơn hoặc bằng 0" },
+              {
+                type: "number",
+                min: 0,
+                message: "Số lượng phải lớn hơn hoặc bằng 0",
+              },
             ]}
           >
             <InputNumber
@@ -432,7 +471,7 @@ const Storage = () => {
             <Button type="primary" htmlType="submit">
               Lưu
             </Button>
-          </div>
+            </div>
         </Form>
       </Modal>
 
@@ -448,7 +487,8 @@ const Storage = () => {
       >
         <p>Bạn có chắc chắn muốn xóa nguyên vật liệu này không?</p>
         <Text strong>
-          {selectedMaterial?.TenNguyenVatLieu || selectedMaterial?.tenNguyenVatLieu}
+          {selectedMaterial?.TenNguyenVatLieu ||
+            selectedMaterial?.tenNguyenVatLieu}
         </Text>
       </Modal>
     </div>

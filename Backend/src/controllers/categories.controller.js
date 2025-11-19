@@ -4,8 +4,6 @@
 
 const { LoaiMon, MonAn } = require('../models');
 const logger = require('../utils/logger');
-const path = require('path');
-const fs = require('fs').promises;
 
 // Lấy tất cả loại món
 const getAllCategories = async (req, res, next) => {
@@ -69,7 +67,8 @@ const createCategory = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Tên loại đã tồn tại' });
     }
 
-    const HinhAnh = req.file.filename;
+    // Lưu URL đầy đủ từ S3 (req.file.location)
+    const HinhAnh = req.file.location;
     const created = await LoaiMon.create({ TenLoai, HinhAnh });
     return res.status(201).json({ success: true, message: 'Tạo loại món thành công', data: created });
   } catch (error) {
@@ -93,16 +92,9 @@ const updateCategory = async (req, res, next) => {
     
     // Xử lý upload hình ảnh mới
     if (req.file) {
-      // Xóa hình ảnh cũ
-      if (category.HinhAnh) {
-        const oldImagePath = path.join(__dirname, '../../wwwroot/images', category.HinhAnh);
-        try {
-          await fs.unlink(oldImagePath);
-        } catch (err) {
-          logger.warn('Không thể xóa hình ảnh cũ', { error: err.message });
-        }
-      }
-      category.HinhAnh = req.file.filename;
+      // Lưu URL đầy đủ từ S3 (req.file.location)
+      // Lưu ý: Với S3, không cần xóa file cũ vì S3 tự quản lý
+      category.HinhAnh = req.file.location;
     }
     
     await category.save();

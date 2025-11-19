@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./Foods.css";
 import api from "../../utils/axios";
 import { toast } from "react-toastify";
-import { FILE_BASE_URL } from "../../config/apiConfig";
 import {
   Button,
   Table,
@@ -234,7 +233,7 @@ const Foods = () => {
         key: "HinhAnh",
         render: (image, record) => (
           <img
-            src={`${FILE_BASE_URL}/images/${image || record.HinhAnh}`}
+            src={image || record.HinhAnh}
             alt={record.TenMon || record.tenMon}
             className="food-thumb"
           />
@@ -495,6 +494,7 @@ const Foods = () => {
           <Form.Item
             label="Giá (VNĐ)"
             name="gia"
+            validateTrigger="onBlur"
             rules={[
               { required: true, message: "Vui lòng nhập giá" },
               { type: "number", min: 0, message: "Giá phải lớn hơn 0" },
@@ -507,7 +507,7 @@ const Foods = () => {
               formatter={(value) =>
                 `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
               }
-              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+              parser={(value) => value.replace(/\$\s?|([,.])/g, "")}
             />
           </Form.Item>
 
@@ -531,9 +531,7 @@ const Foods = () => {
           <Form.Item label="Hình ảnh hiện tại">
             <div className="current-image">
               <img
-                src={`${FILE_BASE_URL}/images/${
-                  selectedFood?.HinhAnh || selectedFood?.hinhAnh
-                }`}
+                src={selectedFood?.HinhAnh || selectedFood?.hinhAnh}
                 alt={selectedFood?.TenMon || selectedFood?.tenMon}
               />
             </div>

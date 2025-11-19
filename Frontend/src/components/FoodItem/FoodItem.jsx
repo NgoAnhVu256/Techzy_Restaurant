@@ -3,27 +3,37 @@ import { assets } from "../../assets/assets";
 import "./FoodItem.css";
 import { StoreContext } from "../../Context/StoreContext";
 
-const FoodItem = ({ id, name, price, description, image }) => {
+const FoodItem = ({ id, name, price, description, image, onAddToCart }) => {
   const { cartItems, addToCart, removeFromCart } = useContext(StoreContext);
+
+  const handleAdd = () => {
+    if (onAddToCart) {
+      onAddToCart();
+    } else {
+      addToCart(id);
+    }
+  };
 
   return (
     <div className="food-item">
       <div className="food-item-img-container">
-        <img className="food-item-image" src={image} alt="" />
+        <img className="food-item-image" src={image} alt={name} />
         {!cartItems[id] ? (
           <img
             className="add"
-            onClick={() => addToCart(id)}
+            onClick={handleAdd}
             src={assets.add_icon_white}
+            alt="Add"
           />
         ) : (
           <div className="food-item-counter">
             <img
               onClick={() => removeFromCart(id)}
               src={assets.remove_icon_red}
+              alt="Remove"
             />
             <p>{cartItems[id]}</p>
-            <img onClick={() => addToCart(id)} src={assets.add_icon_green} />
+            <img onClick={handleAdd} src={assets.add_icon_green} alt="Add" />
           </div>
         )}
       </div>
@@ -31,7 +41,7 @@ const FoodItem = ({ id, name, price, description, image }) => {
         <div className="food-item-name">
           <p>{name}</p>
         </div>
-        <p className="food-item-price">{price}VND</p>
+        <p className="food-item-price">{price.toLocaleString("vi-VN")} VNĐ</p>
       </div>
     </div>
   );

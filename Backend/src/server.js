@@ -2,7 +2,7 @@
  * File khởi động server
  * Kết nối database và start Express server
  */
-
+require("dotenv").config();
 const app = require("./app");
 const {
   sequelize,

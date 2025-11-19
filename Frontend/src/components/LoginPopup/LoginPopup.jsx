@@ -16,7 +16,12 @@ const LoginPopup = ({ setShowLogin }) => {
     setItem: (key, value) => {
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
+          // Store token as string, user as JSON
+          if (key === 'token') {
           window.localStorage.setItem(key, value);
+          } else {
+            window.localStorage.setItem(key, JSON.stringify(value));
+          }
           return true;
         }
         return false;
@@ -60,14 +65,18 @@ const LoginPopup = ({ setShowLogin }) => {
 
     try {
       if (currState === "Login") {
-        const response = await api.post("/TaiKhoan/login", {
-          tenDangNhap: e.target[1].value,
-          matKhau: e.target[2].value
+        const response = await api.post("/users/login", {
+          TenDangNhap: e.target[1].value,
+          MatKhau: e.target[2].value
         });
 
-        if (response.data.token) {
-          if (safeLocalStorage.setItem('token', response.data.token)) {
-            login(response.data.taiKhoan);
+        if (response.data.success && response.data.token) {
+          const tokenValue = response.data.token;
+          const userData = response.data.data;
+          
+          if (safeLocalStorage.setItem('token', tokenValue)) {
+            safeLocalStorage.setItem('user', userData);
+            login(tokenValue, userData);
             setShowLogin(false);
             navigate('/');
           } else {
@@ -76,22 +85,23 @@ const LoginPopup = ({ setShowLogin }) => {
         }
       } else {
         // Handle registration
-        const response = await api.post("/TaiKhoan/register", {
-          hoTen: e.target[0].value,
-          tenDangNhap: e.target[1].value,
-          email: e.target[2].value,
-          matKhau: e.target[3].value,
-          sdt: e.target[4].value,
-          maVaiTro: 2 // Default role for regular users
+        const response = await api.post("/users/register", {
+          HoTen: e.target[0].value,
+          TenDangNhap: e.target[1].value,
+          Email: e.target[2].value,
+          MatKhau: e.target[3].value,
+          SDT: e.target[4].value,
+          MaVaiTro: 3 // VaiTro KhachHang (cần kiểm tra trong database)
         });
 
-        if (response.data) {
+        if (response.data.success) {
           setCurrState("Login");
           setError("Đăng ký thành công! Vui lòng đăng nhập.");
         }
       }
     } catch (err) {
-      setError(err.response?.data || "Có lỗi xảy ra. Vui lòng thử lại.");
+      const errorMessage = err.response?.data?.message || err.response?.data || "Có lỗi xảy ra. Vui lòng thử lại.";
+      setError(errorMessage);
     }
   };
 

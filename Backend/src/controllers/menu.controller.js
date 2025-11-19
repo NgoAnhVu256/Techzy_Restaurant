@@ -5,8 +5,6 @@
 
 const { MonAn, LoaiMon } = require('../models');
 const logger = require('../utils/logger');
-const path = require('path');
-const fs = require('fs').promises;
 
 /**
  * Lấy tất cả món ăn
@@ -150,7 +148,8 @@ const createMenu = async (req, res, next) => {
     // Xử lý upload hình ảnh
     let hinhAnh = '';
     if (req.file) {
-      hinhAnh = req.file.filename;
+      // Lưu URL đầy đủ từ S3 (req.file.location)
+      hinhAnh = req.file.location;
     } else {
       return res.status(400).json({
         success: false,
@@ -222,16 +221,9 @@ const updateMenu = async (req, res, next) => {
 
     // Xử lý upload hình ảnh mới
     if (req.file) {
-      // Xóa hình ảnh cũ
-      if (menuItem.HinhAnh) {
-        const oldImagePath = path.join(__dirname, '../../wwwroot/images', menuItem.HinhAnh);
-        try {
-          await fs.unlink(oldImagePath);
-        } catch (err) {
-          logger.warn('Không thể xóa hình ảnh cũ', { error: err.message });
-        }
-      }
-      menuItem.HinhAnh = req.file.filename;
+      // Lưu URL đầy đủ từ S3 (req.file.location)
+      // Lưu ý: Với S3, không cần xóa file cũ vì S3 tự quản lý
+      menuItem.HinhAnh = req.file.location;
     }
 
     await menuItem.save();
@@ -271,15 +263,8 @@ const deleteMenu = async (req, res, next) => {
       });
     }
 
-    // Xóa hình ảnh
-    if (menuItem.HinhAnh) {
-      const imagePath = path.join(__dirname, '../../wwwroot/images', menuItem.HinhAnh);
-      try {
-        await fs.unlink(imagePath);
-      } catch (err) {
-        logger.warn('Không thể xóa hình ảnh', { error: err.message });
-      }
-    }
+    // Lưu ý: Với S3, không cần xóa file khi xóa record
+    // Có thể implement xóa file từ S3 nếu cần (sử dụng AWS SDK)
 
     await menuItem.destroy();
 

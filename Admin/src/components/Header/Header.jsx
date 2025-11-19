@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dropdown } from "antd";
-import { FiBell, FiSearch, FiLogOut } from "react-icons/fi";
+import { FiSearch, FiLogOut } from "react-icons/fi";
 import { assets } from "../../assets/assets";
 import { toast } from "react-toastify";
 import "./Header.css";
@@ -68,11 +68,6 @@ const Header = () => {
       </div>
 
       <div className="header-actions">
-        <button className="notification-btn" aria-label="Thông báo">
-          <FiBell />
-          <span className="notification-dot" />
-        </button>
-
         <Dropdown
           menu={{ items: userMenuItems }}
           placement="bottomRight"

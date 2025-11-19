@@ -31,15 +31,29 @@ const getCustomerById = async (req, res, next) => {
   }
 };
 
-// Tạo khách hàng
+// Tạo khách hàng (Upsert - tìm hoặc tạo mới)
 const createCustomer = async (req, res, next) => {
   try {
     const { HoTen, SoDienThoai, Email, DiaChi } = req.body;
     if (!HoTen || !SoDienThoai) {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập HoTen và SoDienThoai' });
     }
-    const created = await KhachHang.create({ HoTen, SoDienThoai, Email: Email || null, DiaChi: DiaChi || '' });
-    return res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: created });
+
+    // Tìm khách hàng theo số điện thoại
+    let customer = await KhachHang.findOne({ where: { SoDienThoai } });
+
+    if (customer) {
+      // Cập nhật thông tin nếu có thay đổi
+      if (HoTen) customer.HoTen = HoTen;
+      if (Email) customer.Email = Email;
+      if (DiaChi !== undefined) customer.DiaChi = DiaChi;
+      await customer.save();
+      return res.status(200).json({ success: true, message: 'Cập nhật thông tin khách hàng thành công', data: customer });
+    } else {
+      // Tạo mới khách hàng
+      const created = await KhachHang.create({ HoTen, SoDienThoai, Email: Email || null, DiaChi: DiaChi || '' });
+      return res.status(201).json({ success: true, message: 'Tạo khách hàng thành công', data: created });
+    }
   } catch (error) {
     logger.error('Lỗi tạo khách hàng', { error: error.message });
     next(error);

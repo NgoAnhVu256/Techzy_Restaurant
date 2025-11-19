@@ -5,7 +5,8 @@
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { TaiKhoan, VaiTro } = require("../models");
+const { TaiKhoan, VaiTro, KhachHang } = require("../models");
+const { sequelize } = require("../config/database");
 const config = require("../config/env");
 const logger = require("../utils/logger");
 
@@ -141,41 +142,70 @@ const register = async (req, res, next) => {
     // Hash password
     const MatKhauHash = await bcrypt.hash(MatKhau, 10);
 
-    // Tạo user mới
-    const newUser = await TaiKhoan.create({
-      HoTen,
-      TenDangNhap,
-      Email,
-      SDT,
-      MatKhauHash,
-      MaVaiTro: MaVaiTro || 2, // Mặc định là Nhân viên
-      TrangThai: "Active",
-      NgayThamGia: new Date(),
-    });
+    // Sử dụng transaction để đảm bảo tạo cả TaiKhoan và KhachHang
+    const transaction = await sequelize.transaction();
 
-    // Lấy user với thông tin đầy đủ
-    const user = await TaiKhoan.findByPk(newUser.MaTaiKhoan, {
-      include: [
+    try {
+      // Tạo user mới
+      const newUser = await TaiKhoan.create(
         {
-          model: VaiTro,
-          as: "vaiTro",
+          HoTen,
+          TenDangNhap,
+          Email,
+          SDT,
+          MatKhauHash,
+          MaVaiTro: MaVaiTro || 3, // Mặc định là Khách hàng (cần kiểm tra MaVaiTro trong DB)
+          TrangThai: "Active",
+          NgayThamGia: new Date(),
         },
-      ],
-      attributes: {
-        exclude: ["MatKhauHash"],
-      },
-    });
+        { transaction }
+      );
 
-    logger.info("User đăng ký thành công", {
-      userId: user.MaTaiKhoan,
-      tenDangNhap: user.TenDangNhap,
-    });
+      // Tạo KhachHang liên kết
+      const newCustomer = await KhachHang.create(
+        {
+          HoTen,
+          SoDienThoai: SDT,
+          Email,
+          DiaChi: "", // Có thể để trống hoặc thêm field DiaChi vào form đăng ký
+        },
+        { transaction }
+      );
 
-    return res.status(201).json({
-      success: true,
-      message: "Đăng ký thành công",
-      data: user,
-    });
+      await transaction.commit();
+
+      // Lấy user với thông tin đầy đủ
+      const user = await TaiKhoan.findByPk(newUser.MaTaiKhoan, {
+        include: [
+          {
+            model: VaiTro,
+            as: "vaiTro",
+          },
+        ],
+        attributes: {
+          exclude: ["MatKhauHash"],
+        },
+      });
+
+      // Thêm MaKhachHang vào user data
+      const userData = user.toJSON();
+      userData.MaKhachHang = newCustomer.MaKhachHang;
+
+      logger.info("User đăng ký thành công", {
+        userId: user.MaTaiKhoan,
+        tenDangNhap: user.TenDangNhap,
+        maKhachHang: newCustomer.MaKhachHang,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Đăng ký thành công",
+        data: userData,
+      });
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   } catch (error) {
     logger.error("Lỗi đăng ký user", { error: error.message });
     next(error);

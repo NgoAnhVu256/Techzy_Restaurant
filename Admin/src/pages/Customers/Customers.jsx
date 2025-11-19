@@ -61,7 +61,7 @@ const Customers = () => {
         Email: values.email || null,
         DiaChi: values.diaChi || "",
       });
-      toast.success("Thêm khách hàng thành công");
+        toast.success("Thêm khách hàng thành công");
       fetchCustomers();
       closeAddModal();
     } catch (error) {
@@ -188,11 +188,11 @@ const Customers = () => {
           type="primary"
           icon={<FiPlus />}
           size="large"
-          onClick={() => {
+                    onClick={() => {
             addForm.resetFields();
             setShowAddModal(true);
-          }}
-        >
+                    }}
+                  >
           Thêm Khách hàng
         </Button>
       </div>
@@ -222,7 +222,7 @@ const Customers = () => {
         >
           <Form.Item
             label="Họ tên"
-            name="hoTen"
+                  name="hoTen"
             rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
           >
             <Input placeholder="Nhập họ tên" />
@@ -230,7 +230,7 @@ const Customers = () => {
 
           <Form.Item
             label="Số điện thoại"
-            name="soDienThoai"
+                  name="soDienThoai"
             rules={[
               { required: true, message: "Vui lòng nhập số điện thoại" },
               { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ" },
@@ -241,7 +241,7 @@ const Customers = () => {
 
           <Form.Item
             label="Email"
-            name="email"
+                  name="email"
             rules={[{ type: "email", message: "Email không hợp lệ" }]}
           >
             <Input placeholder="Nhập email (tùy chọn)" />
@@ -251,10 +251,10 @@ const Customers = () => {
             <Input placeholder="Nhập địa chỉ (tùy chọn)" />
           </Form.Item>
 
-          <div className="modal-actions">
+              <div className="modal-actions">
             <Button onClick={closeAddModal}>Hủy</Button>
             <Button type="primary" htmlType="submit">
-              Thêm
+                  Thêm
             </Button>
           </div>
         </Form>
@@ -274,7 +274,7 @@ const Customers = () => {
         <Form layout="vertical" form={editForm} onFinish={handleEditCustomer}>
           <Form.Item
             label="Họ tên"
-            name="hoTen"
+                  name="hoTen"
             rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
           >
             <Input placeholder="Nhập họ tên" />
@@ -282,7 +282,7 @@ const Customers = () => {
 
           <Form.Item
             label="Số điện thoại"
-            name="soDienThoai"
+                  name="soDienThoai"
             rules={[
               { required: true, message: "Vui lòng nhập số điện thoại" },
               { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ" },
@@ -293,7 +293,7 @@ const Customers = () => {
 
           <Form.Item
             label="Email"
-            name="email"
+                  name="email"
             rules={[{ type: "email", message: "Email không hợp lệ" }]}
           >
             <Input placeholder="Nhập email (tùy chọn)" />
@@ -303,10 +303,10 @@ const Customers = () => {
             <Input placeholder="Nhập địa chỉ (tùy chọn)" />
           </Form.Item>
 
-          <div className="modal-actions">
+              <div className="modal-actions">
             <Button onClick={() => setShowEditModal(false)}>Hủy</Button>
             <Button type="primary" htmlType="submit">
-              Lưu
+                  Lưu
             </Button>
           </div>
         </Form>
