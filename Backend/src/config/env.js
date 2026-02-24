@@ -1,7 +1,3 @@
-/**
- * Cấu hình đọc biến môi trường từ file .env
- * Sử dụng thư viện dotenv để load các biến môi trường
- */
 
 require("dotenv").config();
 
@@ -40,17 +36,49 @@ module.exports = {
 
   // Cấu hình CORS
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(",") || [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:5174",
-    ],
+    origin: function (origin, callback) {
+      // ✅ Whitelist domains
+      const whitelist = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174", // ✅ Admin port
+        "https://techzy-restaurant.com",
+      ];
+
+      // ✅ Allow requests with no origin (mobile apps, Postman, same-origin)
+      if (!origin || whitelist.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   },
 
+  // Cấu hình Redis
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASSWORD,
+    url: process.env.REDIS_URL, // connect string full
+  },
+
+  // Cấu hình AWS CloudFront
+  aws: {
+    cloudfrontDomain: process.env.AWS_CLOUDFRONT_DOMAIN, // e.g. https://d123456.cloudfront.net
+  },
+  
   // Cấu hình upload
   upload: {
     maxFileSize: 5 * 1024 * 1024, // 5MB
-    allowedImageTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif"],
+    allowedImageTypes: [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+    ],
   },
 };

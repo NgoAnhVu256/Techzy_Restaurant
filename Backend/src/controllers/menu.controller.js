@@ -5,12 +5,31 @@
 
 const { MonAn, LoaiMon } = require('../models');
 const logger = require('../utils/logger');
+const sequelize = require('../config/database').sequelize;
+const cache = require('../utils/cache');
+
+const CACHE_KEYS = {
+  ALL_MENU: 'menu:all',
+  MENU_COUNT: 'menu:count'
+};
 
 /**
  * Lấy tất cả món ăn
  */
 const getAllMenu = async (req, res, next) => {
   try {
+    // 1. Kiểm tra cache
+    const cachedData = await cache.get(CACHE_KEYS.ALL_MENU);
+    if (cachedData) {
+      logger.info('🎯 Hit Cache: Lấy danh sách món ăn từ Redis');
+      return res.json({
+        success: true,
+        message: 'Lấy danh sách món ăn thành công (từ cache)',
+        data: cachedData
+      });
+    }
+
+    // 2. Nếu không có cache, query DB
     const menuItems = await MonAn.findAll({
       include: [{
         model: LoaiMon,
@@ -27,6 +46,9 @@ const getAllMenu = async (req, res, next) => {
       itemData.GiaSauGiam = itemData.Gia;
       return itemData;
     });
+
+    // 3. Lưu vào cache (TTL: 1 giờ)
+    await cache.set(CACHE_KEYS.ALL_MENU, menuWithDiscount, 3600);
 
     return res.json({
       success: true,
@@ -148,8 +170,17 @@ const createMenu = async (req, res, next) => {
     // Xử lý upload hình ảnh
     let hinhAnh = '';
     if (req.file) {
-      // Lưu URL đầy đủ từ S3 (req.file.location)
-      hinhAnh = req.file.location;
+      // Hỗ trợ cả S3 (location) và Local (filename)
+      // Chỉ dùng S3 location
+      if (req.file.location) {
+        hinhAnh = req.file.location;
+      } else {
+        // Trường hợp lỗi bất thường không có location dù đã qua middleware
+        return res.status(500).json({
+           success: false,
+           message: 'Lỗi upload ảnh lên S3 (không nhận được location)'
+        });
+      }
     } else {
       return res.status(400).json({
         success: false,
@@ -174,6 +205,10 @@ const createMenu = async (req, res, next) => {
     });
 
     logger.info('Tạo món ăn thành công', { maMon: menuItem.MaMon, tenMon: menuItem.TenMon });
+    
+    // Xóa cache khi dữ liệu thay đổi
+    await cache.del(CACHE_KEYS.ALL_MENU);
+    await cache.del(CACHE_KEYS.MENU_COUNT);
 
     return res.status(201).json({
       success: true,
@@ -221,12 +256,21 @@ const updateMenu = async (req, res, next) => {
 
     // Xử lý upload hình ảnh mới
     if (req.file) {
-      // Lưu URL đầy đủ từ S3 (req.file.location)
-      // Lưu ý: Với S3, không cần xóa file cũ vì S3 tự quản lý
-      menuItem.HinhAnh = req.file.location;
+      if (req.file.location) {
+        // Lưu URL đầy đủ từ S3
+        menuItem.HinhAnh = req.file.location;
+      } else {
+         return res.status(500).json({
+           success: false,
+           message: 'Lỗi upload ảnh cập nhật lên S3 (không nhận được location)'
+        });
+      }
     }
 
     await menuItem.save();
+
+    // Xóa cache
+    await cache.del(CACHE_KEYS.ALL_MENU);
 
     // Lấy món ăn với thông tin đầy đủ
     const updatedMenu = await MonAn.findByPk(id, {
@@ -268,6 +312,10 @@ const deleteMenu = async (req, res, next) => {
 
     await menuItem.destroy();
 
+    // Xóa cache
+    await cache.del(CACHE_KEYS.ALL_MENU);
+    await cache.del(CACHE_KEYS.MENU_COUNT);
+
     return res.json({
       success: true,
       message: 'Xóa món ăn thành công'
@@ -278,13 +326,85 @@ const deleteMenu = async (req, res, next) => {
   }
 };
 
+/**
+ * ✅ NEW: Lấy danh sách Best Sellers (Món bán chạy nhất)
+ */
+const getBestSellers = async (req, res, next) => {
+  try {
+    const { limit = 4 } = req.query;
+
+    // ✅ FIX: Validate và sanitize limit
+    const validLimit = parseInt(limit);
+    if (isNaN(validLimit) || validLimit < 1 || validLimit > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit phải là số từ 1 đến 50",
+      });
+    }
+
+    // ✅ Query lấy top món ăn bán chạy nhất từ ChiTietDonHang
+    const bestSellers = await sequelize.query(
+      `
+      SELECT 
+        m."MaMon",
+        m."TenMon",
+        m."HinhAnh",
+        m."Gia",
+        m."MaLoai",
+        l."TenLoai",
+        SUM(ctdh."SoLuong") as "TongSoLuong",
+        COUNT(DISTINCT ctdh."MaDonHang") as "SoDonHang"
+      FROM "ChiTietDonHang" ctdh
+      INNER JOIN "MonAn" m ON ctdh."MaMon" = m."MaMon"
+      LEFT JOIN "LoaiMon" l ON m."MaLoai" = l."MaLoai"
+      INNER JOIN "DonHang" dh ON ctdh."MaDonHang" = dh."MaDonHang"
+      WHERE dh."TrangThai" != 'DaHuy'
+      GROUP BY m."MaMon", m."TenMon", m."HinhAnh", m."Gia", m."MaLoai", l."TenLoai"
+      ORDER BY "TongSoLuong" DESC
+      LIMIT :limit
+      `,
+      {
+        replacements: { limit: validLimit }, // ✅ Parameterized query
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    // ✅ Format data
+    const formattedData = bestSellers.map((item) => ({
+      MaMon: item.MaMon,
+      TenMon: item.TenMon,
+      HinhAnh: item.HinhAnh,
+      Gia: parseFloat(item.Gia),
+      loaiMon: {
+        MaLoai: item.MaLoai,
+        TenLoai: item.TenLoai,
+      },
+      isBestSeller: true,
+      totalSold: parseInt(item.TongSoLuong),
+      orderCount: parseInt(item.SoDonHang),
+    }));
+
+    logger.info(`Lấy ${formattedData.length} món Best Sellers thành công`);
+
+    return res.json({
+      success: true,
+      message: "Lấy danh sách Best Sellers thành công",
+      data: formattedData,
+    });
+  } catch (error) {
+    logger.error("Lỗi lấy Best Sellers", { error: error.message });
+    next(error);
+  }
+};
+
 module.exports = {
   getAllMenu,
   getMenuById,
   getLoaiMon,
   getMenuCount,
-  createMenu,
-  updateMenu,
-  deleteMenu
+  createMenu,      // ✅ Export createMenu
+  updateMenu,      // ✅ Export updateMenu
+  deleteMenu,      // ✅ Export deleteMenu
+  getBestSellers,
 };
 
